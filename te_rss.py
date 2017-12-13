@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+    Tartu Ekspressi RSS voo genereerimiseks veebilehelt
+""" 
+
+import parser
+import makereq
+import sys
+import rssmaker
+
+domain='http://tartuekspress.ee/'
+newshtml = makereq.makeReq('http://tartuekspress.ee/index.php?page=20&type=3')
+dataset = parser.getNewsList(newshtml,domain)
+
+rss = rssmaker.rssmaker(dataset)
+try:
+    rss.write(open('tartuekspress.rss', 'wb'),
+                  encoding='UTF-8', pretty_print=True)
+    print('Fail salvestatud')
+except BaseException:
+    print('Viga! - Ei õnnestunud faili salvestada!')
+
+
