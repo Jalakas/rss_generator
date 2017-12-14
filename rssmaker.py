@@ -7,6 +7,8 @@
 
 from lxml import etree
 import datetime
+import time
+from email import utils
 
 
 def rssmaker(dataset, title_text, link_text, description_text):
@@ -24,7 +26,7 @@ def rssmaker(dataset, title_text, link_text, description_text):
 
     # https://cyber.harvard.edu/rss/rss.html: Sat, 07 Sep 2002 09:42:31 GMT
     lastBuildDate = etree.SubElement(channel, "lastBuildDate")
-    lastBuildDate.text = str(datetime.datetime.utcnow())
+    lastBuildDate.text = str(utils.formatdate(datetime.datetime.timestamp(datetime.datetime.now())))
 
     for i in enumerate(dataset['articleIds']):
         item = etree.SubElement(channel, "item")
@@ -40,8 +42,13 @@ def rssmaker(dataset, title_text, link_text, description_text):
 
         if 'articlePubDate' in dataset:
             # https://cyber.harvard.edu/rss/rss.html: Tue, 03 Jun 2003 09:39:21 GMT
+            curArticlePubdate_datetime = list(dataset['articlePubDate'])[i[0]]
+            curArticlePubdate_tuple = curArticlePubdate_datetime.timetuple()
+            curArticlePubdate_timestamp = time.mktime(curArticlePubdate_tuple)
+            curArticlePubdate_RFC2822 = utils.formatdate(curArticlePubdate_timestamp)
+
             item_pubDate = etree.SubElement(item, "pubDate")
-            item_pubDate.text = list(dataset['articlePubDate'])[i[0]].encode('ascii', 'xmlcharrefreplace')
+            item_pubDate.text = curArticlePubdate_RFC2822
 
         if 'articleIds' in dataset:
             # https://cyber.harvard.edu/rss/rss.html: A string that uniquely identifies the item.
