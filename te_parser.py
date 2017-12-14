@@ -2,36 +2,17 @@
 # -*- coding: utf-8 -*-
 
 """
-    Tartu Ekspressi RSS-voo loomiseks
+    Tartu Ekspressi RSS-voo sisendite parsimine
 """
 
 from lxml import html
-import makereq
 import time
 import datetime
 from time import mktime
+import parsers_common
 
 
 get_article_bodies = False
-
-
-def getArticleData(articleURL):
-    """
-    Artikli lehe pärimine
-    """
-    aricleDataHtml = makereq.makeReq(articleURL)
-    treeArt = html.fromstring(aricleDataHtml)
-    return treeArt
-
-
-def treeExtract(tree, xpathValue):
-    """
-    Leiab etteantud puust etteantud xpathi väärtuse alusel objektid
-    """
-    return next(
-        iter(
-            tree.xpath(xpathValue) or []),
-        None)
 
 
 def extractArticleBody(tree):
@@ -65,16 +46,16 @@ def getNewsList(newshtml, domain):
     newsUrls = [domain + elem for elem in newsUrls]
 
     for elem in newsUrls:
-        articleTree = getArticleData(elem)
+        articleTree = parsers_common.getArticleData(elem)
 
         articleIds.append(
             elem[elem.index('&id=') + 4:elem.index('&', elem.index('&id=') + 4)])
 
-        articleHeaders.append(treeExtract(articleTree, '//div[@class="full_width"]/p[1]/strong/text()'))
+        articleHeaders.append(parsers_common.treeExtract(articleTree, '//div[@class="full_width"]/p[1]/strong/text()'))
 
-        articleImages.append(domain + treeExtract(articleTree, '//div[@class="full_width"]/a/img[@class="thumb"]/@src'))
+        articleImages.append(domain + parsers_common.treeExtract(articleTree, '//div[@class="full_width"]/a/img[@class="thumb"]/@src'))
 
-        articlePubDateRaw = treeExtract(articleTree, '//div[@class="full_width"]/p[*]/i/b[2]/text()')
+        articlePubDateRaw = parsers_common.treeExtract(articleTree, '//div[@class="full_width"]/p[*]/i/b[2]/text()')
 
         # timeformat magic from "13/12/2017 22:24:59" to to datetime()
         articlePubDate.append(datetime.datetime.fromtimestamp(mktime(time.strptime(articlePubDateRaw, "%d/%m/%Y %H:%M:%S"))))  # https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
