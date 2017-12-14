@@ -8,7 +8,7 @@
 from lxml import etree
 
 
-def rssmaker(dataset):
+def rssmaker(dataset, title_text, link_text, description_text):
     version = "2.0"
     root = etree.Element(
         "rss",
@@ -16,11 +16,11 @@ def rssmaker(dataset):
 
     channel = etree.SubElement(root, "channel")
     title = etree.SubElement(channel, "title")
-    title.text = 'Tartu Ekspress'
+    title.text = title_text
     link = etree.SubElement(channel, "link")
-    link.text = 'http://tartuekspress.ee/?page=20&type=3'
+    link.text = link_text
     description = etree.SubElement(channel, "description")
-    description.text = 'Tartu Ekspress - Kõik uudised'
+    description.text = description_text
 
     for i in enumerate(dataset['articleIds']):
         item = etree.SubElement(channel, "item")

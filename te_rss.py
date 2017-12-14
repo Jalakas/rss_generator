@@ -14,7 +14,8 @@ domain = 'http://tartuekspress.ee/'
 newshtml = makereq.makeReq('http://tartuekspress.ee/index.php?page=20&type=3')
 dataset = te_parser.getNewsList(newshtml, domain)
 
-rss = rssmaker.rssmaker(dataset)
+rss = rssmaker.rssmaker(dataset, 'Tartu Ekspress', 'http://tartuekspress.ee/?page=20&type=3', 'Tartu Ekspress - Kõik uudised')
+
 try:
     rss.write(open('tartuekspress.rss', 'wb'),
               encoding='UTF-8', pretty_print=True)
