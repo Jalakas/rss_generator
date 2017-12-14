@@ -5,12 +5,14 @@
     Tartu Ekspressi RSS-voo loomiseks
 """
 
-# from lxml import etree
 from lxml import html
 import makereq
 import time
 import datetime
 from time import mktime
+
+
+get_article_bodies = False
 
 
 def getArticleData(articleURL):
@@ -22,33 +24,13 @@ def getArticleData(articleURL):
     return treeArt
 
 
-def extractArticleHeader(tree):
+def treeExtract(tree, xpathValue):
     """
-    Artikli päise saamiseks
-    """
-    return next(
-        iter(
-            tree.xpath('//div[@class="full_width"]/p[1]/strong/text()') or []),
-        None)
-
-
-def extractArticleImage(tree):
-    """
-    Artikli pildi aadressi saamiseks
+    Leiab etteantud puust etteantud xpathi väärtuse alusel objektid
     """
     return next(
         iter(
-            tree.xpath('//div[@class="full_width"]/a/img[@class="thumb"]/@src') or []),
-        None)
-
-
-def extractArticlePubDate(tree):
-    """
-    Artikli ilmumisaja saamiseks
-    """
-    return next(
-        iter(
-            tree.xpath('//div[@class="full_width"]/p[*]/i/b[2]/text()') or []),
+            tree.xpath(xpathValue) or []),
         None)
 
 
@@ -83,17 +65,22 @@ def getNewsList(newshtml, domain):
     newsUrls = [domain + elem for elem in newsUrls]
 
     for elem in newsUrls:
-        articleIds.append(
-            elem[elem.index('&id=') + 4:elem.index('&', elem.index('&id=') + 4)])
         articleTree = getArticleData(elem)
 
-        articleHeaders.append(extractArticleHeader(articleTree))
-        articleImages.append(domain + extractArticleImage(articleTree))
-        articleBodys.append(extractArticleBody(articleTree))
+        articleIds.append(
+            elem[elem.index('&id=') + 4:elem.index('&', elem.index('&id=') + 4)])
+
+        articleHeaders.append(treeExtract(articleTree, '//div[@class="full_width"]/p[1]/strong/text()'))
+
+        articleImages.append(domain + treeExtract(articleTree, '//div[@class="full_width"]/a/img[@class="thumb"]/@src'))
+
+        articlePubDateRaw = treeExtract(articleTree, '//div[@class="full_width"]/p[*]/i/b[2]/text()')
 
         # timeformat magic from "13/12/2017 22:24:59" to to datetime()
-        articlePubDateRaw = extractArticlePubDate(articleTree)
         articlePubDate.append(datetime.datetime.fromtimestamp(mktime(time.strptime(articlePubDateRaw, "%d/%m/%Y %H:%M:%S"))))  # https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
+
+        if (get_article_bodies is True):
+            articleBodys.append(extractArticleBody(articleTree))
 
     return {"articleIds": articleIds,
             "articleUrls": newsUrls,
