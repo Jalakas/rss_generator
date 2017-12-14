@@ -26,7 +26,7 @@ def rssmaker(dataset, title_text, link_text, description_text):
 
     # https://cyber.harvard.edu/rss/rss.html: Sat, 07 Sep 2002 09:42:31 GMT
     lastBuildDate = etree.SubElement(channel, "lastBuildDate")
-    lastBuildDate.text = str(utils.formatdate(datetime.datetime.timestamp(datetime.datetime.now())))
+    lastBuildDate.text = str(utils.formatdate(datetime.datetime.timestamp(datetime.datetime.now()), True, True))
 
     for i in enumerate(dataset['articleIds']):
         item = etree.SubElement(channel, "item")
@@ -45,7 +45,7 @@ def rssmaker(dataset, title_text, link_text, description_text):
             curArticlePubdate_datetime = list(dataset['articlePubDate'])[i[0]]
             curArticlePubdate_tuple = curArticlePubdate_datetime.timetuple()
             curArticlePubdate_timestamp = time.mktime(curArticlePubdate_tuple)
-            curArticlePubdate_RFC2822 = utils.formatdate(curArticlePubdate_timestamp)
+            curArticlePubdate_RFC2822 = utils.formatdate(curArticlePubdate_timestamp, True, True)
 
             item_pubDate = etree.SubElement(item, "pubDate")
             item_pubDate.text = curArticlePubdate_RFC2822
@@ -58,22 +58,25 @@ def rssmaker(dataset, title_text, link_text, description_text):
         if 'articleImages' in dataset:
             # https://cyber.harvard.edu/rss/rss.html:
             # <enclosure url="http://www.scripting.com/mp3s/weatherReportSuite.mp3" length="12216320" type="audio/mpeg" />
+
             curImgLink = list(dataset['articleImages'])[i[0]]
             if len(curImgLink) < len(link_text + "1.jpg"):
                 print("rssmaker: ei lisa rssi pildilinki, kuna see on liiga lühike: " + str(curImgLink))
             else:
-                item_enclosure = etree.SubElement(item, "enclosure")
-                item_enclosure_url = etree.SubElement(item_enclosure, "url")
-                item_enclosure_url.text = str(curImgLink).encode('ascii', 'xmlcharrefreplace')
-                item_enclosure_len = etree.SubElement(item_enclosure, "length")
-                item_enclosure_len.text = ''  # https://jarvateataja.postimees.ee/rss puhul toimis
-                item_enclosure_type = etree.SubElement(item_enclosure, "type")
-                if '.jpg' in (item_enclosure_url.text):
-                    item_enclosure_type.text = "image/jpeg"
+                item_enc_url = str(curImgLink).encode('ascii', 'xmlcharrefreplace')
+                if b'.jpg' in (item_enc_url):
+                    item_enc_type = "image/jpeg"
 
-                elif '.png' in (item_enclosure_url.text):
-                    item_enclosure_type.text = "image/png"
+                elif b'.png' in (item_enc_url):
+                    item_enc_type = "image/png"
                 else:
-                    item_enclosure_type.text = ""
+                    item_enc_type = ""
+
+                enclosure_attrib = {'url': item_enc_url,
+                                    'length': '',
+                                    'type': item_enc_type,
+                                    }
+
+                etree.SubElement(item, "enclosure", enclosure_attrib)
 
     return(etree.ElementTree(root))
