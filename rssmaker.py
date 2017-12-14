@@ -24,9 +24,14 @@ def rssmaker(dataset, title_text, link_text, description_text):
     description = etree.SubElement(channel, "description")
     description.text = description_text
 
-    # https://cyber.harvard.edu/rss/rss.html: Sat, 07 Sep 2002 09:42:31 GMT
+    # https://cyber.harvard.edu/rss/rss.html: "Sat, 07 Sep 2002 09:42:31 GMT" ehk https://tools.ietf.org/html/rfc822
     lastBuildDate = etree.SubElement(channel, "lastBuildDate")
     lastBuildDate.text = str(utils.formatdate(datetime.datetime.timestamp(datetime.datetime.now()), True, True))
+
+    # https://cyber.harvard.edu/rss/rss.html#ltttlgtSubelementOfLtchannelgt:
+    # Number of minutes that indicates how long a channel can be cached before refreshing from the source.
+    ttl = etree.SubElement(channel, "ttl")
+    ttl.text = str(120)
 
     for i in enumerate(dataset['articleIds']):
         item = etree.SubElement(channel, "item")
@@ -40,7 +45,7 @@ def rssmaker(dataset, title_text, link_text, description_text):
         item_description = etree.SubElement(item, "description")
         item_description.text = list(dataset['articleHeaders'])[i[0]].encode('ascii', 'xmlcharrefreplace')
 
-        if 'articlePubDate' in dataset:
+        if 'articlePubDate' in dataset and len(dataset['articlePubDate']) > 0:
             # https://cyber.harvard.edu/rss/rss.html: Tue, 03 Jun 2003 09:39:21 GMT
             curArticlePubdate_datetime = list(dataset['articlePubDate'])[i[0]]
             curArticlePubdate_tuple = curArticlePubdate_datetime.timetuple()
@@ -50,12 +55,12 @@ def rssmaker(dataset, title_text, link_text, description_text):
             item_pubDate = etree.SubElement(item, "pubDate")
             item_pubDate.text = curArticlePubdate_RFC2822
 
-        if 'articleIds' in dataset:
+        if 'articleIds' in dataset and len(dataset['articleIds']) > 0:
             # https://cyber.harvard.edu/rss/rss.html: A string that uniquely identifies the item.
             item_guid = etree.SubElement(item, "guid")
             item_guid.text = list(dataset['articleIds'])[i[0]].encode('ascii', 'xmlcharrefreplace')
 
-        if 'articleImages' in dataset:
+        if 'articleImages' in dataset and len(dataset['articleImages']) > 0:
             # https://cyber.harvard.edu/rss/rss.html:
             # <enclosure url="http://www.scripting.com/mp3s/weatherReportSuite.mp3" length="12216320" type="audio/mpeg" />
 
