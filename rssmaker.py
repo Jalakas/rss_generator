@@ -6,6 +6,7 @@
 """
 
 from lxml import etree
+import datetime
 
 
 def rssmaker(dataset, title_text, link_text, description_text):
@@ -24,15 +25,20 @@ def rssmaker(dataset, title_text, link_text, description_text):
 
     for i in enumerate(dataset['articleIds']):
         item = etree.SubElement(channel, "item")
+
         item_title = etree.SubElement(item, "title")
-        item_title.text = list(
-            dataset['articleTitles'])[i[0]].encode('ascii', 'xmlcharrefreplace')
+        item_title.text = list(dataset['articleTitles'])[i[0]].encode('ascii', 'xmlcharrefreplace')
 
         item_link = etree.SubElement(item, "link")
-        item_link.text = list(
-            dataset['articleUrls'])[i[0]].encode('ascii', 'xmlcharrefreplace')
+        item_link.text = list(dataset['articleUrls'])[i[0]].encode('ascii', 'xmlcharrefreplace')
 
         item_description = etree.SubElement(item, "description")
         item_description.text = list(dataset['articleHeaders'])[i[0]].encode('ascii', 'xmlcharrefreplace')
+
+        item_guid = etree.SubElement(item, "guid")
+        item_guid.text = list(dataset['articleIds'])[i[0]].encode('ascii', 'xmlcharrefreplace')
+
+    lastBuildDate = etree.SubElement(channel, "lastBuildDate")
+    lastBuildDate.text = str(datetime.datetime.utcnow())
 
     return(etree.ElementTree(root))
