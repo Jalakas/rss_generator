@@ -76,7 +76,7 @@ def getNewsList(newshtml, domain):
         articleTree = getArticleData(elem)
 
         articleHeaders.append(extractArticleHeader(articleTree))
-        articleImages.append(extractArticleImage(articleTree))
+        articleImages.append(domain + extractArticleImage(articleTree))
         articleBodys.append(extractArticleBody(articleTree))
 
     return {"articleIds": articleIds,
