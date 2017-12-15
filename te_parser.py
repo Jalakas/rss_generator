@@ -6,9 +6,6 @@
 """
 
 from lxml import html
-import time
-import datetime
-from time import mktime
 import parsers_common
 
 
@@ -37,7 +34,6 @@ def getNewsList(newshtml, domain):
     """
     tree = html.fromstring(newshtml)
 
-    articleBodys = []
     articleDescriptions = []
     articleIds = []
     articleImages = []
@@ -46,23 +42,21 @@ def getNewsList(newshtml, domain):
     articleUrls = tree.xpath('//div[@class="forum"][2]/ul/li/a/@href')
     articleUrls = [domain + elem for elem in articleUrls]
 
-    for elem in articleUrls:
-        articleTree = parsers_common.getArticleData(elem)
+    for i in range(0, len(articleUrls)):
+        articleUrl = articleUrls[i]
+        articleTree = parsers_common.getArticleData(articleUrl)
 
         articleIds.append(
-            elem[elem.index('&id=') + 4:elem.index('&', elem.index('&id=') + 4)])
+            articleUrl[articleUrl.index('&id=') + 4:articleUrl.index('&', articleUrl.index('&id=') + 4)])
 
         articleDescriptions.append(parsers_common.treeExtract(articleTree, '//div[@class="full_width"]/p[1]/strong/text()'))
 
         articleImages.append(parsers_common.treeExtract(articleTree, '//div[@class="full_width"]/a/img[@class="thumb"]/@src'))
 
-        artPubDateRaw = parsers_common.treeExtract(articleTree, '//div[@class="full_width"]/p[*]/i/b[2]/text()')
-
         # timeformat magic from "13/12/2017 22:24:59" to to datetime()
-        articlePubDates.append(datetime.datetime.fromtimestamp(mktime(time.strptime(artPubDateRaw, "%d/%m/%Y %H:%M:%S"))))  # https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
-
-        if (get_article_bodies is True):
-            articleBodys.append(extractArticleBody(articleTree))
+        curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@class="full_width"]/p[*]/i/b[2]/text()')
+        curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d/%m/%Y %H:%M:%S")
+        articlePubDates.append(curArtPubDate)
 
     articleImages = [domain + elem for elem in articleImages]
 

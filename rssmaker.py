@@ -34,7 +34,7 @@ def rssmaker(dataset, title_text, link_text, description_text):
     ttl = etree.SubElement(channel, "ttl")
     ttl.text = str(120)
 
-    for i in range(0, len(dataset['articleIds']) - 1):
+    for i in range(0, len(dataset['articleIds'])):
         item = etree.SubElement(channel, "item")
 
         item_title = etree.SubElement(item, "title")
