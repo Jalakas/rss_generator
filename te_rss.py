@@ -7,7 +7,6 @@
 
 import te_parser
 import makereq
-# import sys
 import rssmaker
 
 domain = 'http://tartuekspress.ee/'

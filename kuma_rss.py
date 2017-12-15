@@ -7,7 +7,6 @@
 
 import kuma_parser
 import makereq
-# import sys
 import rssmaker
 
 domain = 'http://kuma.fm/'

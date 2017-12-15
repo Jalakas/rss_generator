@@ -19,17 +19,7 @@ def extractArticleBody(tree):
     """
     Artikli tervikteksti saamiseks
     """
-    body = tree.xpath('//div[@class="news-single-content"]/text()')
-    # fulltext = []
-    # for elem in body:
-        # rawtext = elem.text_content()
-        # try:
-            # rawtext = rawtext[:rawtext.index('Tweet\n')]
-        # except ValueError:
-            # None
-        # fulltext.append(rawtext)
-    # return ''.join(fulltext)
-    return body
+    return None
 
 
 def getNewsList(newshtml, domain):
@@ -38,27 +28,25 @@ def getNewsList(newshtml, domain):
     """
     tree = html.fromstring(newshtml)
 
-    articleIds = []
-    articleUrls = tree.xpath('//div[@class="news-list-item-wrapper"]/h3/a/@href')
-    articleTitles = tree.xpath('//div[@class="news-list-item-wrapper"]/h3/a/text()')
-    articleHeaders = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-excerpt"]/p/text()')
-    articleImages = tree.xpath('//div[@class="news-list-media"]/img/@src')
     articleBodys = []
-    articlePubDate = []
+    articleDescriptions = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-excerpt"]/p/text()')
+    articleIds = []
+    articleImages = tree.xpath('//div[@class="news-list-media"]/img/@src')
+    articleImages = [domain + elem for elem in articleImages]
+    articlePubDates = []
+    articleTitles = tree.xpath('//div[@class="news-list-item-wrapper"]/h3/a/text()')
+    articleUrls = tree.xpath('//div[@class="news-list-item-wrapper"]/h3/a/@href')
+    articleUrls = [domain + elem for elem in articleUrls]
 
     articlePubDay = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/text()[1]')
     articlePubMonth = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/span[@class="month"]/text()')
     articlePubYear = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/text()[2]')
 
     for i in range(0, len(articleUrls) - 1):
-        articleUrl = str(domain + articleUrls[i])
-        articleUrls[i] = articleUrl
+        articleUrl = articleUrls[i]
 
         # generate unical id from link
         articleIds.append(hashlib.md5(articleUrl.encode('utf-8')).hexdigest())
-
-        articleImage = str(domain + articleImages[i])
-        articleImages[i] = articleImage
 
         if (get_article_bodies is True):
             articleTree = parsers_common.getArticleData(articleUrl)
@@ -68,25 +56,24 @@ def getNewsList(newshtml, domain):
             print(buf)
             articleBodys.append(buf)
 
-            articlePubDateRaw = parsers_common.treeExtract(articleTree, '//div[@class="news-single-timedata"]/text()')
+            artPubDateRaw = parsers_common.treeExtract(articleTree, '//div[@class="news-single-timedata"]/text()')
 
             # timeformat magic from "13 dets  17" to datetime()
-            articlePubDateRaw = articlePubDateRaw.strip().replace('  ', ' ')
-            articlePubDateRaw = articlePubDateRaw.replace('jaan', '01').replace('veeb', '02').replace('märts', '03').replace('aprill', '04').replace('mai', '05').replace('juuni', '06')
-            articlePubDateRaw = articlePubDateRaw.replace('juuli', '07').replace('aug', '08').replace('sept', '09').replace('okt', '10').replace('nov', '11').replace('dets', '12')
-            articlePubDate.append(datetime.datetime.fromtimestamp(mktime(time.strptime(articlePubDateRaw, "%d %m %y"))), )  # https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
+            artPubDateRaw = artPubDateRaw.strip().replace('  ', ' ')
+            artPubDateRaw = artPubDateRaw.replace('jaan', '01').replace('veeb', '02').replace('märts', '03').replace('aprill', '04').replace('mai', '05').replace('juuni', '06')
+            artPubDateRaw = artPubDateRaw.replace('juuli', '07').replace('aug', '08').replace('sept', '09').replace('okt', '10').replace('nov', '11').replace('dets', '12')
+            articlePubDates.append(datetime.datetime.fromtimestamp(mktime(time.strptime(artPubDateRaw, "%d %m %y"))))  # https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
         else:
             if i < len(articlePubYear) and (int(articlePubYear[i].strip()) > 2016):
                 curYear = articlePubYear[i].strip()
-            articlePubDateRaw = articlePubDay[i].strip() + " " + articlePubMonth[i].strip() + " " + curYear
-            articlePubDateRaw = datetime.datetime.fromtimestamp(mktime(time.strptime(articlePubDateRaw, "%d %m %Y")))
-            articlePubDate.append(articlePubDateRaw)
+            artPubDateRaw = articlePubDay[i].strip() + " " + articlePubMonth[i].strip() + " " + curYear
+            artPubDateRaw = datetime.datetime.fromtimestamp(mktime(time.strptime(artPubDateRaw, "%d %m %Y")))
+            articlePubDates.append(artPubDateRaw)
 
-    return {"articleIds": articleIds,
-            "articleUrls": articleUrls,
-            "articleTitles": articleTitles,
-            "articleHeaders": articleHeaders,
+    return {"articleDescriptions": articleDescriptions,
             "articleImages": articleImages,
-            "articleBodys": articleBodys,
-            "articlePubDate": articlePubDate,
-            }
+            "articleIds": articleIds,
+            "articlePubDates": articlePubDates,
+            "articleTitles": articleTitles,
+            "articleUrls": articleUrls,
+           }
