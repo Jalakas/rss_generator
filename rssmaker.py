@@ -47,7 +47,7 @@ def rssmaker(dataset, title_text, link_text, description_text):
             item_description = etree.SubElement(item, "description")
             item_description.text = list(dataset['articleDescriptions'])[i].encode('ascii', 'xmlcharrefreplace')
         else:
-            print(("rssmaker: järgneval pealkirjal puudus kirjeldus: " + str(item_title)))
+            print(("rssmaker: järgneval pealkirjal puudus vajalik kirjeldus: " + str(item_title.text)))
             item_description = etree.SubElement(item, "description")
             item_description.text = item_title.text
 

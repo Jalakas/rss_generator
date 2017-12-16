@@ -55,6 +55,23 @@ def longMonthsToNumber(rawDateTimeText):
     return rawDateTimeText
 
 
+def stringify_children(node):
+    """
+    Given a LXML tag, return contents as a string
+    >>> html = "<p><strong>Sample sentence</strong> with tags.</p>"
+    >>> node = lxml.html.fragment_fromstring(html)
+    >>> extract_html_content(node)
+    "<strong>Sample sentence</strong> with tags."
+    From: https://stackoverflow.com/questions/4624062/get-all-text-inside-a-tag-in-lxml/32468202#32468202
+    """
+    if node is None or (len(node) == 0 and not getattr(node, 'text', None)):
+        return ""
+    node.attrib.clear()
+    opening_tag = len(node.tag) + 2
+    closing_tag = -(len(node.tag) + 4)
+    return html.tostring(node)[opening_tag:closing_tag]
+
+
 def treeExtract(tree, xpathValue):
     """
     Leiab etteantud artikli lehe puust etteantud xpathi väärtuse alusel objektid
