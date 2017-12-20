@@ -8,21 +8,12 @@
 from lxml import html
 import parsers_common
 
-get_article_bodies = False
 
-
-def extractArticleBody(tree):
+def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
     """
-    Artikli tervikteksti saamiseks
+    Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    return None
-
-
-def getNewsList(newshtml, domain):
-    """
-    Peameetod kõigi uudiste nimekirja loomiseks
-    """
-    tree = html.fromstring(newshtml)
+    tree = html.fromstring(htmlPage)
 
     articleDescriptions = tree.xpath('//div[@class="js-newsline-container"]/div/a/text()')
     articleIds = []
@@ -37,10 +28,11 @@ def getNewsList(newshtml, domain):
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
 
-        # generate unical id from link
+        # get unical id from articleUrl
         articleIds.append(articleUrl.split('/')[-2])
 
-        articleDescriptions[i] = articleDescriptionsTag[i] + ". " + articleDescriptions[i]
+        # description
+        articleDescriptions[i] = articleDescriptionsTag[i] + "<br>" + articleDescriptions[i]
 
         # timeformat magic from "14 dets  2017 11:34" to datetime()
         curArtPubDate = articlePubDatesRaw[i]

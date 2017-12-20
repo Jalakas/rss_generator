@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    Parserid ja funktsioonid erinevate lehtedega kasutamiseks
+    Erinevate parserid ja funktsioonid
 """
 
 import datetime
@@ -13,11 +13,29 @@ from lxml import html
 from time import mktime
 
 
-def extractArticleBody(tree):
+def fixBrokenUTF8asEncoding(brokenBytearray, encoding='iso8859_15'):  # 'iso8859_4', 'iso8859_15'
     """
-    Artikli tervikteksti saamiseks
+    Imiteerime vigast 'UTF-8' sisu -> 'enkooding' formaati konverteerimist ja asendame nii leitud vigased sümbolid algsete sümbolitega
+    http://i18nqa.com/debug/UTF8-debug.html
     """
-    return None
+
+    curBytearray = brokenBytearray.decode(encoding, 'ignore')
+
+    for curInt in range(0x80, 383):  # ž on 382
+        byteUnicode = str(chr(curInt))
+
+        try:
+            byteUTF8inEncode = byteUnicode.encode('utf-8').decode(encoding)
+        except Exception:
+            #  print("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: pole sümbolit")
+            continue
+
+        #  print("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: " + str(byteUTF8inEncode))
+        curBytearray = curBytearray.replace(byteUTF8inEncode, byteUnicode)
+    curBytearray = curBytearray.replace('â', '"')
+    curBytearray = curBytearray.replace('â', '"')
+
+    return curBytearray.encode('utf-8')
 
 
 def getArticleData(articleURL):
@@ -32,20 +50,12 @@ def getArticleData(articleURL):
 def rawToDatetime(rawDateTimeText, rawDateTimeSyntax):
     """
     Teeb sissentud ajatekstist ja süntaksist datetime tüüpi aja
-    rawDateTimeText = aeg teksti kujul, näiteks: "23. 11 2007 / "
-    rawDateTimeSyntax = selle teksti süntaks, näiteks "%d. %m %Y / "
+    rawDateTimeText = aeg teksti kujul, näiteks: "23. 11 2007 /"
+    rawDateTimeSyntax = selle teksti süntaks, näiteks "%d. %m %Y /"
     Süntaksi seletus: https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
     """
-
     ret = datetime.datetime.fromtimestamp(mktime(time.strptime(rawDateTimeText, rawDateTimeSyntax)))
     return ret
-
-
-def shortMonthsToNumber(rawDateTimeText):
-    rawDateTimeText = rawDateTimeText.replace('  ', ' ').strip().lower()
-    rawDateTimeText = rawDateTimeText.replace('jaan', '01').replace('veeb', '02').replace('märts', '03').replace('aprill', '04').replace('mai', '05').replace('juuni', '06')
-    rawDateTimeText = rawDateTimeText.replace('juuli', '07').replace('aug', '08').replace('sept', '09').replace('okt', '10').replace('nov', '11').replace('dets', '12')
-    return rawDateTimeText
 
 
 def longMonthsToNumber(rawDateTimeText):
@@ -55,7 +65,14 @@ def longMonthsToNumber(rawDateTimeText):
     return rawDateTimeText
 
 
-def stringify_children(node):
+def shortMonthsToNumber(rawDateTimeText):
+    rawDateTimeText = rawDateTimeText.replace('  ', ' ').strip().lower()
+    rawDateTimeText = rawDateTimeText.replace('jaan', '01').replace('veeb', '02').replace('märts', '03').replace('aprill', '04').replace('mai', '05').replace('juuni', '06')
+    rawDateTimeText = rawDateTimeText.replace('juuli', '07').replace('aug', '08').replace('sept', '09').replace('okt', '10').replace('nov', '11').replace('dets', '12')
+    return rawDateTimeText
+
+
+def stringify_children(node, pageTreeEcoding='utf-8'):
     """
     Given a LXML tag, return contents as a string
     >>> html = "<p><strong>Sample sentence</strong> with tags.</p>"
@@ -69,7 +86,18 @@ def stringify_children(node):
     node.attrib.clear()
     opening_tag = len(node.tag) + 2
     closing_tag = -(len(node.tag) + 4)
-    return html.tostring(node)[opening_tag:closing_tag]
+    ret = html.tostring(node, encoding=pageTreeEcoding)[opening_tag:closing_tag]
+    ret = ret.decode(pageTreeEcoding)
+    ret = toPlaintext(ret)
+    return ret
+
+
+def toPlaintext(rawText):
+    """
+    Tagastab formaatimata teksti
+    Sisend utf-8 kujul rawText
+    """
+    return rawText.replace('\r', '').replace('\n', '').replace('  ', ' ').strip().rstrip('</').rstrip('<')
 
 
 def treeExtract(tree, xpathValue):

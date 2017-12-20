@@ -9,9 +9,6 @@ from lxml import html
 import parsers_common
 
 
-get_article_bodies = False
-
-
 def extractArticleBody(tree):
     """
     Artikli tervikteksti saamiseks
@@ -28,11 +25,11 @@ def extractArticleBody(tree):
     return ''.join(fulltext)
 
 
-def getNewsList(newshtml, domain):
+def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
     """
-    Peameetod kõigi uudiste nimekirja loomiseks
+    Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    tree = html.fromstring(newshtml)
+    tree = html.fromstring(htmlPage)
 
     articleDescriptions = []
     articleIds = []
@@ -42,21 +39,32 @@ def getNewsList(newshtml, domain):
     articleUrls = tree.xpath('//div[@class="forum"][2]/ul/li/a/@href')
     articleUrls = [domain + elem for elem in articleUrls]
 
+    get_article_bodies = True
+
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
-        articleTree = parsers_common.getArticleData(articleUrl)
 
-        articleIds.append(
-            articleUrl[articleUrl.index('&id=') + 4:articleUrl.index('&', articleUrl.index('&id=') + 4)])
+        # get unique id from articleUrl
+        articleIds.append(articleUrl[articleUrl.index('&id=') + 4:articleUrl.index('&', articleUrl.index('&id=') + 4)])
 
-        articleDescriptions.append(parsers_common.treeExtract(articleTree, '//div[@class="full_width"]/p[1]/strong/text()'))
+        if (get_article_bodies is True and i < maxPageURLstoVisit):
+            # load article into tree
+            articleTree = parsers_common.getArticleData(articleUrl)
 
-        articleImages.append(parsers_common.treeExtract(articleTree, '//div[@class="full_width"]/a/img[@class="thumb"]/@src'))
+            # descriptions
+            # articleDescriptions.append(parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[1]/strong/text()'))  # esimene peatükk pole alati strong
+            articleDescriptionsParent = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[1]')   # as a parent
+            articleDescriptionsChilds = parsers_common.stringify_children(articleDescriptionsParent)
+            articleDescriptions.append(articleDescriptionsChilds)
 
-        # timeformat magic from "13/12/2017 22:24:59" to to datetime()
-        curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@class="full_width"]/p[*]/i/b[2]/text()')
-        curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d/%m/%Y %H:%M:%S")
-        articlePubDates.append(curArtPubDate)
+            # images
+            curArtPubImage = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/a/img[@class="thumb"]/@src')
+            articleImages.append(curArtPubImage)
+
+            # timeformat magic from "13/12/2017 22:24:59" to to datetime()
+            curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[*]/i/b[2]/text()')
+            curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d/%m/%Y %H:%M:%S")
+            articlePubDates.append(curArtPubDate)
 
     articleImages = [domain + elem for elem in articleImages]
 

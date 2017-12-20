@@ -53,13 +53,13 @@ def rssmaker(dataset, title_text, link_text, description_text):
 
         if ('articlePubDates' in dataset and i < len(list(dataset['articlePubDates'])) and list(dataset['articlePubDates'])[i] is not None):
             # https://cyber.harvard.edu/rss/rss.html: Tue, 03 Jun 2003 09:39:21 GMT
-            artPubDate_datetime = list(dataset['articlePubDates'])[i]
-            artPubDate_tuple = artPubDate_datetime.timetuple()
-            artPubDate_timestamp = time.mktime(artPubDate_tuple)
-            artPubDate_RFC2822 = utils.formatdate(artPubDate_timestamp, True, True)
-
             item_pubDate = etree.SubElement(item, "pubDate")
-            item_pubDate.text = artPubDate_RFC2822
+
+            art_PubDate_datetime = list(dataset['articlePubDates'])[i]
+            art_PubDate_tuple = art_PubDate_datetime.timetuple()
+            art_PubDate_timestamp = time.mktime(art_PubDate_tuple)
+            art_PubDate_RFC2822 = utils.formatdate(art_PubDate_timestamp, True, True)
+            item_pubDate.text = art_PubDate_RFC2822
 
         if ('articleIds' in dataset and i < len(list(dataset['articleIds'])) and list(dataset['articleIds'])[i] is not None):
             # https://cyber.harvard.edu/rss/rss.html: A string that uniquely identifies the item.

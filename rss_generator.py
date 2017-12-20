@@ -16,24 +16,28 @@ import parser_nommeraadio  # noqa F401
 import parser_pohjarannik  # noqa F401
 import parser_tartuekspress  # noqa F401
 import parser_teabeleht  # noqa F401
+import parser_tootukassa  # noqa F401
 
 RSSdefinitions = []
 RSStoGenerate = []
+maxArticleURLstoVisit = 5
 
 #                       name,               title,              description                         domain                                      domain_rss (optional)
-RSSdefinitions.append(['bns',               'BNS',              'BNS - uudised Eestist, Lätist, Leedust ja maailmast',    'http://bns.ee',     ''])  # noqa E241
+RSSdefinitions.append(['bns',               'BNS',              'BNS - uudised Eestist, Lätist, Leedust ja maailmast',    'http://bns.ee',      ''])  # noqa E241
 RSSdefinitions.append(['kuma',              'Kuma',             'Kuma - Kesk-Eesti uudised',        'http://kuma.fm',                           ''])  # noqa E241
 RSSdefinitions.append(['lounaeestlane',     'Lõunaeestlane',    'Lõunaeestlane',                    'http://www.lounaeestlane.ee',              ''])  # noqa E241
-RSSdefinitions.append(['nommeraadio',       'Nõmme Raadio',     'Nõmme Raadio - radikaalseim raadio Eestis!', 'http://www.nommeraadio.ee/',              ''])  # noqa E241
+RSSdefinitions.append(['nommeraadio',       'Nõmme Raadio',     'Nõmme Raadio - radikaalseim raadio Eestis!', 'http://www.nommeraadio.ee/',     ''])  # noqa E241
 RSSdefinitions.append(['pohjarannik',       'Põhjarannik',      'Põhjarannik',                      'http://pr.pohjarannik.ee',                 ''])  # noqa E241
 RSSdefinitions.append(['tartuekspress',     'Tartu Ekspress',   'Tartu Ekspress - Kõik uudised',    'http://tartuekspress.ee',                  'http://tartuekspress.ee/index.php?page=20&type=3'])  # noqa E241
 RSSdefinitions.append(['teabeleht',         'Teabeleht',        'Teabeleht',                        'http://www.teabeleht.com',                 ''])  # noqa E241
+RSSdefinitions.append(['tootukassa',        'Töötukassa',       'Töötukassa tööpakkumised',         'https://www.tootukassa.ee/toopakkumised?location_id=0051,0795&education_id=KUTSEKORGHARIDUS,BAKALAUREUSEOPE,MAGISTRIOPE', ''])  # noqa E241
 
-# User input
+
+# user input
 try:
     sys.argv[1]
 except Exception:
-    print('rss_generaator: Sisend määramata, genereeritakse kõik vood')
+    print('rss_generaator: Sisend määramata, genereeritakse kõik vood.')
     RSStoGenerate = range(0, len(RSSdefinitions))
 else:
     sisend = sys.argv[1]
@@ -45,10 +49,10 @@ else:
                 RSStoGenerate.append(i)
                 break
 if len(RSStoGenerate) < 1:
-    print('rss_generaator: Ei suutnud tuvastada sisendist sobivat nime ega numbrit, genereeritakse kõik vood')
+    print('rss_generaator: Ei suutnud tuvastada sisendist sobivat nime ega numbrit, genereeritakse kõik vood.')
     RSStoGenerate = range(0, len(RSSdefinitions))
 
-
+# generate all feeds
 for curRSS in RSStoGenerate:
 
     curName = RSSdefinitions[curRSS][0]
@@ -62,15 +66,16 @@ for curRSS in RSStoGenerate:
 
     try:
         newshtml = makereq.makeReq(curDomainRSS)
-        dataset = curParser.getNewsList(newshtml, curDomain)
-        rss = rssmaker.rssmaker(dataset, curTitle, curDomainRSS, curDescription)
-
-        try:
-            rss.write(open(curFilename, 'wb'),
-                      encoding='UTF-8', pretty_print=True)
-            print('rss_generaator: Fail ' + curFilename + ' salvestatud.')
-        except BaseException:
-            print('rss_generaator: Viga! Ei õnnestunud faili ' + curFilename + ' salvestada.')
-
     except Exception:
         print('rss_generaator: Viga! Ei suutnud andmeid pärida leheküljelt: ' + curDomainRSS)
+        continue
+
+    dataset = curParser.getArticleListsFromHtml(newshtml, curDomain, maxArticleURLstoVisit)
+    rss = rssmaker.rssmaker(dataset, curTitle, curDomainRSS, curDescription)
+
+    try:
+        rss.write(open(curFilename, 'wb'),
+                  encoding='UTF-8', pretty_print=True)
+        print('rss_generaator: Fail ' + curFilename + ' salvestatud.')
+    except Exception:
+        print('rss_generaator: Viga! Ei õnnestunud faili ' + curFilename + ' salvestada.')

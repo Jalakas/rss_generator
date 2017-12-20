@@ -8,21 +8,15 @@
 from lxml import html
 import parsers_common
 
-get_article_bodies = False
 
+def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
+    """
+    Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
+    """
+    # parandame untsuläinud tähtede kodeerimise
+    htmlPage = parsers_common.fixBrokenUTF8asEncoding(htmlPage, 'iso8859_15')
 
-def extractArticleBody(tree):
-    """
-    Artikli tervikteksti saamiseks
-    """
-    return None
-
-
-def getNewsList(newshtml, domain):
-    """
-    Peameetod kõigi uudiste nimekirja loomiseks
-    """
-    tree = html.fromstring(newshtml)
+    tree = html.fromstring(htmlPage)
 
     articleDescriptions = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-excerpt"]/p/text()')
     articleIds = []
@@ -37,14 +31,22 @@ def getNewsList(newshtml, domain):
     articlePubMonth = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/span[@class="month"]/text()')
     articlePubYear = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/text()[2]')
 
+    get_article_bodies = True
+
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
 
-        # generate unical id from link
+        # generate unical id from ArticleUrl
         articleIds.append(parsers_common.urlToHash(articleUrl))
 
-        if (get_article_bodies is True):
+        if (get_article_bodies is True and i < maxPageURLstoVisit):
+            # load article into tree
             articleTree = parsers_common.getArticleData(articleUrl)
+
+            # descriptions
+            articleDescriptionsParent = parsers_common.treeExtract(articleTree, '//div[@class="news-single-item"]/div[@class="news-single-content"]')  # as a parent
+            articleDescriptionsChilds = parsers_common.stringify_children(articleDescriptionsParent)
+            articleDescriptions[i] = articleDescriptionsChilds
 
             # timeformat magic from "13 dets  17" to datetime()
             curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@class="news-single-timedata"]/text()')

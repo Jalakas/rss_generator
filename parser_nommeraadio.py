@@ -8,14 +8,12 @@
 from lxml import html
 import parsers_common
 
-get_article_bodies = False
 
-
-def getNewsList(newshtml, domain):
+def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
     """
-    Peameetod kõigi uudiste nimekirja loomiseks
+    Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    tree = html.fromstring(newshtml)
+    tree = html.fromstring(htmlPage)
 
     articleDescriptions = []
     articleIds = []
@@ -24,17 +22,17 @@ def getNewsList(newshtml, domain):
     articleTitles = tree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
     articleUrls = tree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/a/@href')
 
-    articleDescriptionsRaw = tree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_bottom"]/div[@class="audioitem_item_desc"]')  # as a parent
+    articleDescriptionsParent = tree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_bottom"]/div[@class="audioitem_item_desc"]')  # as a parent
     articlePubDatesRaw = tree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
 
-        # generate unical id from link
+        # generate unique id from articleUrl
         articleIds.append(parsers_common.urlToHash(articleUrl))
 
-        curArtDesc = parsers_common.stringify_children(articleDescriptionsRaw[i])
-        articleDescriptions.append(curArtDesc.decode("utf-8"))
+        curArtDesc = parsers_common.stringify_children(articleDescriptionsParent[i])
+        articleDescriptions.append(curArtDesc)
 
         # timeformat magic from "15.12.2017 - L" to datetime()
         curArtPubDate = articlePubDatesRaw[i].split('-')[0]

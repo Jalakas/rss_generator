@@ -8,14 +8,12 @@
 from lxml import html
 import parsers_common
 
-get_article_bodies = False
 
-
-def getNewsList(newshtml, domain):
+def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
     """
-    Peameetod kõigi uudiste nimekirja loomiseks
+    Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    tree = html.fromstring(newshtml)
+    tree = html.fromstring(htmlPage)
 
     articleDescriptions = tree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/p[1]/text()')
     articleIds = []
@@ -25,20 +23,25 @@ def getNewsList(newshtml, domain):
     articleUrls = tree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/h4/a/@href')
     articleUrls = [domain + elem for elem in articleUrls]
 
+    # todo(reading times from articles is BROKEN and maybe useless too)
+    get_article_bodies = False
+
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
-        # articleTree = parsers_common.getArticleData(articleUrl)
 
-        # generate unical id from link
+        # generate unique id from articleUrl
         articleIds.append(parsers_common.urlToHash(articleUrl))
 
-        # todo(BROKEN)
-        # timeformat magic from "Avaldatud: Neljapäev, 14 Detsember 2017 12:46" to datetime()
-        # curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@class="kakk-postheadericons kakk-metadata-icons"]/span/::before/text()')
-        # curArtPubDate = parsers_common.treeExtract(articleTree, '//span[@class="kakk-postdateicon"]//text()')
-        # curArtPubDate = parsers_common.longMonthsToNumber(curArtPubDate.split(',')[1])
-        # curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d %m %Y %H:%M")
-        # articlePubDates.append(curArtPubDate)
+        if (get_article_bodies is True and i < maxPageURLstoVisit):
+            # load article into tree
+            articleTree = parsers_common.getArticleData(articleUrl)
+
+            # timeformat magic from "Avaldatud: Neljapäev, 14 Detsember 2017 12:46" to datetime()
+            # curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@class="kakk-postheadericons kakk-metadata-icons"]/span/::before/text()')  # katki
+            curArtPubDate = parsers_common.treeExtract(articleTree, '//span[@class="kakk-postdateicon"]//text()')
+            curArtPubDate = parsers_common.longMonthsToNumber(curArtPubDate.split(',')[1])
+            curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d %m %Y %H:%M")
+            articlePubDates.append(curArtPubDate)
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,
