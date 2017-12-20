@@ -65,12 +65,13 @@ for curRSS in RSStoGenerate:
     curFilename = curName + '.rss'
 
     try:
-        newshtml = makereq.makeReq(curDomainRSS)
+        # load page into tree
+        pageTree = makereq.getArticleData(curDomainRSS)
     except Exception:
         print('rss_generaator: Viga! Ei suutnud andmeid pärida leheküljelt: ' + curDomainRSS)
         continue
 
-    dataset = curParser.getArticleListsFromHtml(newshtml, curDomain, maxArticleURLstoVisit)
+    dataset = curParser.getArticleListsFromHtml(pageTree, curDomain, maxArticleURLstoVisit)
     rss = rssmaker.rssmaker(dataset, curTitle, curDomainRSS, curDescription)
 
     try:

@@ -5,22 +5,21 @@
     Teabeleht RSS-voo sisendite parsimine
 """
 
-from lxml import html
+import makereq
 import parsers_common
 
 
-def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     """
     Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    tree = html.fromstring(htmlPage)
 
-    articleDescriptions = tree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/p[1]/text()')
+    articleDescriptions = pageTree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/p[1]/text()')
     articleIds = []
-    articleImages = tree.xpath('//div[@class="nspArt nspCol1"]/a/img/@src')
+    articleImages = pageTree.xpath('//div[@class="nspArt nspCol1"]/a/img/@src')
     articlePubDates = []
-    articleTitles = tree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/h4/a/text()')
-    articleUrls = tree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/h4/a/@href')
+    articleTitles = pageTree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/h4/a/text()')
+    articleUrls = pageTree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/h4/a/@href')
     articleUrls = [domain + elem for elem in articleUrls]
 
     # todo(reading times from articles is BROKEN and maybe useless too)
@@ -34,7 +33,7 @@ def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
 
         if (get_article_bodies is True and i < maxPageURLstoVisit):
             # load article into tree
-            articleTree = parsers_common.getArticleData(articleUrl)
+            articleTree = makereq.getArticleData(articleUrl)
 
             # timeformat magic from "Avaldatud: Neljapäev, 14 Detsember 2017 12:46" to datetime()
             # curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@class="kakk-postheadericons kakk-metadata-icons"]/span/::before/text()')  # katki

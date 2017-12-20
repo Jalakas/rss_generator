@@ -5,15 +5,15 @@
     Tartu Ekspressi RSS-voo sisendite parsimine
 """
 
-from lxml import html
+import makereq
 import parsers_common
 
 
-def extractArticleBody(tree):
+def extractArticleBody(articleTree):
     """
     Artikli tervikteksti saamiseks
     """
-    body = tree.xpath('//div[@class="full_width"]/p')
+    body = articleTree.xpath('//div[@class="full_width"]/p')
     fulltext = []
     for elem in body:
         rawtext = elem.text_content()
@@ -25,18 +25,17 @@ def extractArticleBody(tree):
     return ''.join(fulltext)
 
 
-def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     """
     Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    tree = html.fromstring(htmlPage)
 
     articleDescriptions = []
     articleIds = []
     articleImages = []
     articlePubDates = []
-    articleTitles = tree.xpath('//div[@class="forum"][2]/ul/li/a/text()')
-    articleUrls = tree.xpath('//div[@class="forum"][2]/ul/li/a/@href')
+    articleTitles = pageTree.xpath('//div[@class="forum"][2]/ul/li/a/text()')
+    articleUrls = pageTree.xpath('//div[@class="forum"][2]/ul/li/a/@href')
     articleUrls = [domain + elem for elem in articleUrls]
 
     get_article_bodies = True
@@ -49,7 +48,7 @@ def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
 
         if (get_article_bodies is True and i < maxPageURLstoVisit):
             # load article into tree
-            articleTree = parsers_common.getArticleData(articleUrl)
+            articleTree = makereq.getArticleData(articleUrl)
 
             # descriptions
             # articleDescriptions.append(parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[1]/strong/text()'))  # esimene peatükk pole alati strong

@@ -5,25 +5,23 @@
     Nõmmeraadio RSS-voo sisendite parsimine
 """
 
-from lxml import html
 import parsers_common
 
 
-def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     """
     Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    tree = html.fromstring(htmlPage)
 
     articleDescriptions = []
     articleIds = []
     articleImages = []
     articlePubDates = []
-    articleTitles = tree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
-    articleUrls = tree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/a/@href')
+    articleTitles = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
+    articleUrls = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/a/@href')
 
-    articleDescriptionsParent = tree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_bottom"]/div[@class="audioitem_item_desc"]')  # as a parent
-    articlePubDatesRaw = tree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
+    articleDescriptionsParent = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_bottom"]/div[@class="audioitem_item_desc"]')  # as a parent
+    articlePubDatesRaw = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]

@@ -5,31 +5,27 @@
     Kuma RSS-voo sisendite parsimine
 """
 
-from lxml import html
+import makereq
 import parsers_common
 
 
-def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     """
     Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    # parandame untsuläinud tähtede kodeerimise
-    htmlPage = parsers_common.fixBrokenUTF8asEncoding(htmlPage, 'iso8859_15')
 
-    tree = html.fromstring(htmlPage)
-
-    articleDescriptions = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-excerpt"]/p/text()')
+    articleDescriptions = pageTree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-excerpt"]/p/text()')
     articleIds = []
-    articleImages = tree.xpath('//div[@class="news-list-media"]/img/@src')
+    articleImages = pageTree.xpath('//div[@class="news-list-media"]/img/@src')
     articleImages = [domain + elem for elem in articleImages]
     articlePubDates = []
-    articleTitles = tree.xpath('//div[@class="news-list-item-wrapper"]/h3/a/text()')
-    articleUrls = tree.xpath('//div[@class="news-list-item-wrapper"]/h3/a/@href')
+    articleTitles = pageTree.xpath('//div[@class="news-list-item-wrapper"]/h3/a/text()')
+    articleUrls = pageTree.xpath('//div[@class="news-list-item-wrapper"]/h3/a/@href')
     articleUrls = [domain + elem for elem in articleUrls]
 
-    articlePubDay = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/text()[1]')
-    articlePubMonth = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/span[@class="month"]/text()')
-    articlePubYear = tree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/text()[2]')
+    articlePubDay = pageTree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/text()[1]')
+    articlePubMonth = pageTree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/span[@class="month"]/text()')
+    articlePubYear = pageTree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/text()[2]')
 
     get_article_bodies = True
 
@@ -41,7 +37,7 @@ def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
 
         if (get_article_bodies is True and i < maxPageURLstoVisit):
             # load article into tree
-            articleTree = parsers_common.getArticleData(articleUrl)
+            articleTree = makereq.getArticleData(articleUrl)
 
             # descriptions
             articleDescriptionsParent = parsers_common.treeExtract(articleTree, '//div[@class="news-single-item"]/div[@class="news-single-content"]')  # as a parent

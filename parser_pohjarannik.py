@@ -5,24 +5,22 @@
     Lõunaeestlane RSS-voo sisendite parsimine
 """
 
-from lxml import html
 import parsers_common
 
 
-def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     """
     Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    tree = html.fromstring(htmlPage)
 
-    articleDescriptions = tree.xpath('//div[@class="midColPost"]/p/text()')
+    articleDescriptions = pageTree.xpath('//div[@class="midColPost"]/p/text()')
     articleIds = []
-    articleImages = tree.xpath('//div[@class="midColPost"]/a/img/@src')
+    articleImages = pageTree.xpath('//div[@class="midColPost"]/a/img/@src')
     articlePubDates = []
-    articleTitles = tree.xpath('//div[@class="midColPost"]/h2/a/@title')
-    articleUrls = tree.xpath('//div[@class="midColPost"]/h2/a/@href')
+    articleTitles = pageTree.xpath('//div[@class="midColPost"]/h2/a/@title')
+    articleUrls = pageTree.xpath('//div[@class="midColPost"]/h2/a/@href')
 
-    articlePubDatesRaw = tree.xpath('//div[@class="midColPost"]/span/text()[1]')
+    articlePubDatesRaw = pageTree.xpath('//div[@class="midColPost"]/span/text()[1]')
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]

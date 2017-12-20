@@ -5,22 +5,21 @@
     Lõunaeestlane RSS-voo sisendite parsimine
 """
 
-from lxml import html
+import makereq
 import parsers_common
 
 
-def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     """
     Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    tree = html.fromstring(htmlPage)
 
     articleDescriptions = []
     articleIds = []
-    articleImages = tree.xpath('//div[@class="col-sm-6"]/div[@class="post-item"]/a/div/img/@src')
+    articleImages = pageTree.xpath('//div[@class="col-sm-6"]/div[@class="post-item"]/a/div/img/@src')
     articlePubDates = []
-    articleTitles = tree.xpath('//div[@class="col-sm-6"]/div[@class="post-item"]/a/h3/text()')
-    articleUrls = tree.xpath('//div[@class="col-sm-6"]/div[@class="post-item"]/a/@href')
+    articleTitles = pageTree.xpath('//div[@class="col-sm-6"]/div[@class="post-item"]/a/h3/text()')
+    articleUrls = pageTree.xpath('//div[@class="col-sm-6"]/div[@class="post-item"]/a/@href')
 
     get_article_bodies = True
 
@@ -32,7 +31,7 @@ def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
 
         if (get_article_bodies is True and i < maxPageURLstoVisit):
             # load article into tree
-            articleTree = parsers_common.getArticleData(articleUrl)
+            articleTree = makereq.getArticleData(articleUrl)
 
             # get first paragraph as header
             curArtHeader = parsers_common.treeExtract(articleTree, '//div[@class="col-sm-9"]/p[1]/strong/text()')

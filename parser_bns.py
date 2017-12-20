@@ -5,25 +5,23 @@
     BNS RSS-voo sisendite parsimine
 """
 
-from lxml import html
 import parsers_common
 
 
-def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     """
     Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    tree = html.fromstring(htmlPage)
 
-    articleDescriptions = tree.xpath('//div[@class="js-newsline-container"]/div/a/text()')
+    articleDescriptions = pageTree.xpath('//div[@class="js-newsline-container"]/div/a/text()')
     articleIds = []
     articleImages = []
     articlePubDates = []
-    articleTitles = tree.xpath('//div[@class="js-newsline-container"]/div/a/text()')
-    articleUrls = tree.xpath('//div[@class="js-newsline-container"]/div/a/@href')
+    articleTitles = pageTree.xpath('//div[@class="js-newsline-container"]/div/a/text()')
+    articleUrls = pageTree.xpath('//div[@class="js-newsline-container"]/div/a/@href')
 
-    articlePubDatesRaw = tree.xpath('//div[@class="js-newsline-container"]/span[1]/text()')
-    articleDescriptionsTag = tree.xpath('//div[@class="js-newsline-container"]/div/span[1]/text()')
+    articlePubDatesRaw = pageTree.xpath('//div[@class="js-newsline-container"]/span[1]/text()')
+    articleDescriptionsTag = pageTree.xpath('//div[@class="js-newsline-container"]/div/span[1]/text()')
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]

@@ -5,26 +5,24 @@
     Töötukassa RSS-voo sisendite parsimine
 """
 
-from lxml import html
 import parsers_common
 
 
-def getArticleListsFromHtml(htmlPage, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     """
     Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
-    tree = html.fromstring(htmlPage)
 
     articleDescriptions = []
     articleIds = []
     articleImages = []
     articlePubDates = []
-    articleTitles = tree.xpath('//table[@class="footable"]/tbody/tr/td[1]/a/strong/text()')
-    articleUrls = tree.xpath('//table[@class="footable"]/tbody/tr/td[1]/a/@href')
+    articleTitles = pageTree.xpath('//table[@class="footable"]/tbody/tr/td[1]/a/strong/text()')
+    articleUrls = pageTree.xpath('//table[@class="footable"]/tbody/tr/td[1]/a/@href')
 
-    articleDescName = tree.xpath('//table[@class="footable"]/tbody/tr/td[1]/text()[2]')
-    articleDescLoc = tree.xpath('//table[@class="footable"]/tbody/tr/td[4]/text()')
-    articlePubDatesRaw = tree.xpath('//table[@class="footable"]/tbody/tr/td[2]/text()')
+    articleDescName = pageTree.xpath('//table[@class="footable"]/tbody/tr/td[1]/text()[2]')
+    articleDescLoc = pageTree.xpath('//table[@class="footable"]/tbody/tr/td[4]/text()')
+    articlePubDatesRaw = pageTree.xpath('//table[@class="footable"]/tbody/tr/td[2]/text()')
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
