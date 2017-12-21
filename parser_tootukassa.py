@@ -10,7 +10,7 @@ import parsers_common
 
 def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     """
-    Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
+    Meetod saidi pakkumiste nimekirja loomiseks
     """
 
     articleDescriptions = []

@@ -9,6 +9,7 @@ import makereq
 import rssmaker
 import sys
 
+import parser_avalikteenistus  # noqa F401
 import parser_bns  # noqa F401
 import parser_kuma  # noqa F401
 import parser_lounaeestlane  # noqa F401
@@ -23,6 +24,7 @@ RSStoGenerate = []
 maxArticleURLstoVisit = 5
 
 #                       name,               title,              description                         domain                                      domain_rss (optional)
+RSSdefinitions.append(['avalikteenistus',   'Avalik teenistus', 'Avaliku teenistuse "Tartu" töökohad', 'https://www.rahandusministeerium.ee/et/avalikud-konkursid?page=1', ''])  # noqa E241
 RSSdefinitions.append(['bns',               'BNS',              'BNS - uudised Eestist, Lätist, Leedust ja maailmast',    'http://bns.ee',      ''])  # noqa E241
 RSSdefinitions.append(['kuma',              'Kuma',             'Kuma - Kesk-Eesti uudised',        'http://kuma.fm',                           ''])  # noqa E241
 RSSdefinitions.append(['lounaeestlane',     'Lõunaeestlane',    'Lõunaeestlane',                    'http://www.lounaeestlane.ee',              ''])  # noqa E241

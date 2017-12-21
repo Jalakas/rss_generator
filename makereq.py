@@ -15,12 +15,14 @@ def getArticleData(articleURL):
     """
     aricleDataHtml = makeReq(articleURL)
 
-    if (aricleDataHtml.decode("iso8859_15", 'ignore').find(u"\xc3")):
-        print("makereg: parandame ebaõnnestunud 'UTF-8' as 'iso8859_15' veebilehe kodeeringu")
+    try:
+        aricleDataHtml.decode("utf-8")
+    except Exception:
+        print("makereg: parandame ebaõnnestunud 'UTF-8' as 'iso8859_15' veebilehe kodeeringu veebilehel: " + articleURL)
         aricleDataHtml = fixBrokenUTF8asEncoding(aricleDataHtml, 'iso8859_15')
 
-    treeArt = html.fromstring(aricleDataHtml)
-    return treeArt
+    articleTree = html.fromstring(aricleDataHtml)
+    return articleTree
 
 
 def fixBrokenUTF8asEncoding(brokenBytearray, encoding='iso8859_15'):  # 'iso8859_4', 'iso8859_15'
