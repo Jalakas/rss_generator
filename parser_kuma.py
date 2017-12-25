@@ -17,11 +17,11 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articleDescriptions = pageTree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-excerpt"]/p/text()')
     articleIds = []
     articleImages = pageTree.xpath('//div[@class="news-list-media"]/img/@src')
-    articleImages = [domain + elem for elem in articleImages]
+    articleImages = parsers_common.domainUrls(domain, articleImages)
     articlePubDates = []
     articleTitles = pageTree.xpath('//div[@class="news-list-item-wrapper"]/h3/a/text()')
     articleUrls = pageTree.xpath('//div[@class="news-list-item-wrapper"]/h3/a/@href')
-    articleUrls = [domain + elem for elem in articleUrls]
+    articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
     articlePubDay = pageTree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/text()[1]')
     articlePubMonth = pageTree.xpath('//div[@class="news-list-item-wrapper"]/div[@class="news-list-item-date"]/span[@class="month"]/text()')
@@ -40,9 +40,9 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
             articleTree = makereq.getArticleData(articleUrl)
 
             # descriptions
-            articleDescriptionsParent = parsers_common.treeExtract(articleTree, '//div[@class="news-single-item"]/div[@class="news-single-content"]')  # as a parent
-            articleDescriptionsChilds = parsers_common.stringify_children(articleDescriptionsParent)
-            articleDescriptions[i] = articleDescriptionsChilds
+            curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@class="news-single-item"]/div[@class="news-single-content"]')  # as a parent
+            curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
+            articleDescriptions[i] = curArtDescChilds
 
             # timeformat magic from "13 dets  17" to datetime()
             curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@class="news-single-timedata"]/text()')

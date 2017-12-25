@@ -21,7 +21,7 @@ def extractArticleBody(articleTree):
             rawtext = rawtext[:rawtext.index('Tweet\n')]
         except ValueError:
             None
-        fulltext.append(rawtext)
+        fulltext.append(parsers_common.toPlaintext(rawtext))
     return ''.join(fulltext)
 
 
@@ -36,7 +36,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articlePubDates = []
     articleTitles = pageTree.xpath('//div[@class="forum"][2]/ul/li/a/text()')
     articleUrls = pageTree.xpath('//div[@class="forum"][2]/ul/li/a/@href')
-    articleUrls = [domain + elem for elem in articleUrls]
+    articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
     get_article_bodies = True
 
@@ -51,10 +51,10 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
             articleTree = makereq.getArticleData(articleUrl)
 
             # descriptions
-            # articleDescriptions.append(parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[1]/strong/text()'))  # esimene peatükk pole alati strong
-            articleDescriptionsParent = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[1]')   # as a parent
-            articleDescriptionsChilds = parsers_common.stringify_children(articleDescriptionsParent)
-            articleDescriptions.append(articleDescriptionsChilds)
+            # curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[1]')   # as a parent
+            # curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
+            # articleDescriptions.append(curArtDescChilds)
+            articleDescriptions.append(extractArticleBody(articleTree))
 
             # images
             curArtPubImage = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/a/img[@class="thumb"]/@src')
@@ -65,7 +65,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
             curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d/%m/%Y %H:%M:%S")
             articlePubDates.append(curArtPubDate)
 
-    articleImages = [domain + elem for elem in articleImages]
+    articleImages = parsers_common.domainUrls(domain, articleImages)
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,

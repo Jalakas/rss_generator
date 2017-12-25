@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    Avaliku teenistuse "Tartu" RSS-voo sisendite parsimine
+    Geopeituse "Tartu" RSS-voo sisendite parsimine
 """
 
 import parsers_common
@@ -10,18 +10,18 @@ import parsers_common
 
 def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     """
-    Meetod saidi pakkumiste nimekirja loomiseks
+    Meetod Tartu aarete nimekirja loomiseks
     """
 
     articleDescriptions = []
     articleIds = []
     # articleImages = []
-    # articlePubDates = []
-    articleTitles = pageTree.xpath('//table[@class="views-table cols-5"]/tbody/tr/td[1]/text()')
-    articleUrls = pageTree.xpath('//table[@class="views-table cols-5"]/tbody/tr/td[5]/div[1]/a/@href')
+    articlePubDates = pageTree.xpath('//div[@id="t-content"]/table[1]/tr/td[1]/text()')
+    articleTitles = pageTree.xpath('//div[@id="t-content"]/table[1]/tr/td[@class="left"]/b/a/text()')
+    articleUrls = pageTree.xpath('//div[@id="t-content"]/table[1]/tr/td[@class="left"]/b/a/@href')
+    articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
-    articleDescName = pageTree.xpath('//table[@class="views-table cols-5"]/tbody/tr/td[2]/div[1]/text()')
-    articleDescLoc = pageTree.xpath('//table[@class="views-table cols-5"]/tbody/tr/td[4]/div[1]/text()')
+    articleDescriptionsParents = pageTree.xpath('//div[@id="t-content"]/table[1]/tr')  # as a parent
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
@@ -30,10 +30,14 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         articleIds.append(articleUrl.split('/')[-1])
 
         # descriptions
-        articleDescriptions.append(parsers_common.toPlaintext(articleDescName[i]) + "<br>" + parsers_common.toPlaintext(articleDescLoc[i]))
+        curArtDescParent = articleDescriptionsParents[i]
+        curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
+        articleDescriptions.append(curArtDescChilds)
 
-        # titles
-        articleTitles[i] = parsers_common.toPlaintext(articleTitles[i]).capitalize()
+        # timeformat magic from "12.12.2017" to datetime()
+        curArtPubDate = articlePubDates[i]
+        curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y")
+        articlePubDates[i] = curArtPubDate
 
     # remove non "Tartu" ocation lines
     retArticleDescriptions = []
@@ -47,7 +51,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
             retArticleDescriptions.append(articleDescriptions[i])
             retArticleIds.append(articleIds[i])
             # retArticleImages.append(articleImages[i])
-            # retArticlePubDates.append(articlePubDates[i])
+            retArticlePubDates.append(articlePubDates[i])
             retArticleTitles.append(articleTitles[i])
             retArticleUrls.append(articleUrls[i])
 

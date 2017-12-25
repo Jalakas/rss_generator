@@ -12,6 +12,16 @@ from lxml import html
 from time import mktime
 
 
+def domainUrls(domain, urls):
+    """
+    Ühendab domeenid URLidega
+    """
+    domainUrls = []
+    for i in range(0, len(urls)):
+        domainUrls.append(domain.rstrip('/') + '/' + urls[i].lstrip('/'))
+    return domainUrls
+
+
 def rawToDatetime(rawDateTimeText, rawDateTimeSyntax):
     """
     Teeb sissentud ajatekstist ja süntaksist datetime tüüpi aja
@@ -62,7 +72,7 @@ def toPlaintext(rawText):
     Tagastab formaatimata teksti
     Sisend utf-8 kujul rawText
     """
-    return rawText.replace('\r', '').replace('\n', '').replace('  ', ' ').strip().rstrip('</').rstrip('<')
+    return rawText.replace('</td>', ' </td>').replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('    ', ' ').replace('   ', ' ').replace('  ', ' ').strip().rstrip('</').rstrip('<')
 
 
 def treeExtract(tree, xpathValue):

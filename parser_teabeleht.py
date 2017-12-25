@@ -14,13 +14,13 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
 
-    articleDescriptions = pageTree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/p[1]/text()')
+    articleDescriptions = pageTree.xpath('//div[@id="nsp-nsp-234"]//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/p[1]/text()')
     articleIds = []
-    articleImages = pageTree.xpath('//div[@class="nspArt nspCol1"]/a/img/@src')
+    articleImages = pageTree.xpath('//div[@id="nsp-nsp-234"]//div[@class="nspArt nspCol1"]/a/img/@src')
     articlePubDates = []
-    articleTitles = pageTree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/h4/a/text()')
-    articleUrls = pageTree.xpath('//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/h4/a/@href')
-    articleUrls = [domain + elem for elem in articleUrls]
+    articleTitles = pageTree.xpath('//div[@id="nsp-nsp-234"]//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/h4/a/text()')
+    articleUrls = pageTree.xpath('//div[@id="nsp-nsp-234"]//div[@class="nspArt nspCol1"]/div[@class="gkArtContentWrap"]/h4/a/@href')
+    articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
     # todo(reading times from articles is BROKEN and maybe useless too)
     get_article_bodies = False

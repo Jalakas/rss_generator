@@ -21,7 +21,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articleTitles = pageTree.xpath('//div[@class="col-sm-6"]/div[@class="post-item"]/a/h3/text()')
     articleUrls = pageTree.xpath('//div[@class="col-sm-6"]/div[@class="post-item"]/a/@href')
 
-    get_article_bodies = True
+    get_article_bodies = False
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
@@ -34,8 +34,8 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
             articleTree = makereq.getArticleData(articleUrl)
 
             # get first paragraph as header
-            curArtHeader = parsers_common.treeExtract(articleTree, '//div[@class="col-sm-9"]/p[1]/strong/text()')
-            articleDescriptions.append(curArtHeader)
+            curArtDesc = parsers_common.treeExtract(articleTree, '//div[@class="col-sm-9"]/p[1]/strong/text()')
+            articleDescriptions.append(curArtDesc)
 
             # timeformat magic from "Avaldatud: 14 detsember, 2017" to datetime()
             curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@class="col-sm-9"]/div[@class="page-header"]/em/text()')
