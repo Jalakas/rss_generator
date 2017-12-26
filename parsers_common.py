@@ -72,7 +72,7 @@ def toPlaintext(rawText):
     Tagastab formaatimata teksti
     Sisend utf-8 kujul rawText
     """
-    return rawText.replace('</td>', ' </td>').replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('    ', ' ').replace('   ', ' ').replace('  ', ' ').strip().rstrip('</').rstrip('<')
+    return rawText.replace('</p>', ' </p>').replace('</td>', ' </td>').replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('    ', ' ').replace('   ', ' ').replace('  ', ' ').strip().rstrip('</').rstrip('<')
 
 
 def treeExtract(tree, xpathValue):

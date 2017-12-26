@@ -17,6 +17,7 @@ import parser_kuma  # noqa F401
 import parser_lounaeestlane  # noqa F401
 import parser_nommeraadio  # noqa F401
 import parser_pohjarannik  # noqa F401
+import parser_stokker  # noqa F401
 import parser_tartuekspress  # noqa F401
 import parser_teabeleht  # noqa F401
 import parser_tootukassa  # noqa F401
@@ -25,18 +26,19 @@ RSSdefinitions = []
 RSStoGenerate = []
 maxArticleURLstoVisit = 10
 
-#                       name,               title,              description                         domain                                      domain_rss (optional)
-RSSdefinitions.append(['avalikteenistus',   'Avalik teenistus', 'Avaliku teenistuse "Tartu" töökohad',  'http://www.rahandusministeerium.ee/et/avalikud-konkursid?page=1', ''])  # noqa E241
-RSSdefinitions.append(['bns',               'BNS',              'BNS - uudised Eestist, Lätist, Leedust ja maailmast',    'http://bns.ee',      ''])  # noqa E241
+#                       name,               title,              description                             domain                                  domain_rss (optional)
+RSSdefinitions.append(['avalikteenistus',   'Avalik teenistus', 'Avaliku teenistuse "Tartu" töökohad',  'http://www.rahandusministeerium.ee',   'http://www.rahandusministeerium.ee/et/avalikud-konkursid?page=1'])  # noqa E241
+RSSdefinitions.append(['bns',               'BNS',              'BNS - uudised Eestist, Lätist, Leedust ja maailmast', 'http://bns.ee',         ''])  # noqa E241
 RSSdefinitions.append(['geopeitus',         'Geopeitus',        'Geopeituse "Tartu" aarded',            'http://www.geopeitus.ee',              ''])  # noqa E241
-RSSdefinitions.append(['jt',                'Järva Teataja',    'Järva Teataja',                        'http://jarvateataja.postimees.ee',     'https://jarvateataja.postimees.ee/search'])  # noqa E241
+RSSdefinitions.append(['jt',                'Järva Teataja',    'Järva Teataja',                        'http://jarvateataja.postimees.ee',     'http://jarvateataja.postimees.ee/search'])  # noqa E241
 RSSdefinitions.append(['kuma',              'Kuma',             'Kuma - Kesk-Eesti uudised',            'http://kuma.fm',                       ''])  # noqa E241
 RSSdefinitions.append(['lounaeestlane',     'Lõunaeestlane',    'Lõunaeestlane',                        'http://www.lounaeestlane.ee',          ''])  # noqa E241
-RSSdefinitions.append(['nommeraadio',       'Nõmme Raadio',     'Nõmme Raadio - radikaalseim raadio Eestis!', 'http://www.nommeraadio.ee',     ''])  # noqa E241
+RSSdefinitions.append(['nommeraadio',       'Nõmme Raadio',     'Nõmme Raadio - radikaalseim raadio Eestis!', 'http://www.nommeraadio.ee',      ''])  # noqa E241
 RSSdefinitions.append(['pohjarannik',       'Põhjarannik',      'Põhjarannik',                          'http://pr.pohjarannik.ee',             ''])  # noqa E241
+RSSdefinitions.append(['stokker',           'Stokker - Outlet', 'Stokker - Outlet',                     'http://www.stokker.ee',                'http://www.stokker.ee/kampaaniad/tooriistade-outlet?instorage=1&limit=100'])  # noqa E241
 RSSdefinitions.append(['tartuekspress',     'Tartu Ekspress',   'Tartu Ekspress - Kõik uudised',        'http://tartuekspress.ee',              'http://tartuekspress.ee/index.php?page=20&type=3'])  # noqa E241
 RSSdefinitions.append(['teabeleht',         'Teabeleht',        'Teabeleht',                            'http://www.teabeleht.com',             ''])  # noqa E241
-RSSdefinitions.append(['tootukassa',        'Töötukassa',       'Töötukassa tööpakkumised',             'http://www.tootukassa.ee/toopakkumised?location_id=0051,0795&education_id=KUTSEKORGHARIDUS,BAKALAUREUSEOPE,MAGISTRIOPE', ''])  # noqa E241
+RSSdefinitions.append(['tootukassa',        'Töötukassa',       'Töötukassa tööpakkumised',             'http://www.tootukassa.ee',             'http://www.tootukassa.ee/toopakkumised?location_id=0051,0795&education_id=KUTSEKORGHARIDUS,BAKALAUREUSEOPE,MAGISTRIOPE'])  # noqa E241
 
 
 # user input
@@ -78,7 +80,7 @@ for curRSS in RSStoGenerate:
         continue
 
     dataset = curParser.getArticleListsFromHtml(pageTree, curDomain, maxArticleURLstoVisit)
-    rss = rssmaker.rssmaker(dataset, curTitle, curDomainRSS, curDescription)
+    rss = rssmaker.rssmaker(dataset, curTitle, curDomain, curDomainRSS, curDescription)
 
     try:
         rss.write(open(curFilename, 'wb'),

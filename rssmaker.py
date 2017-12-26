@@ -11,7 +11,7 @@ from email import utils
 from lxml import etree
 
 
-def rssmaker(dataset, title_text, link_text, description_text):
+def rssmaker(dataset, title_text, domain_text, link_text, description_text):
     root = etree.Element("rss", version="2.0")
     channel = etree.SubElement(root, "channel")
 
@@ -70,7 +70,7 @@ def rssmaker(dataset, title_text, link_text, description_text):
             # https://cyber.harvard.edu/rss/rss.html
             # <enclosure url="http://www.scripting.com/mp3s/weatherReportSuite.mp3" length="12216320" type="audio/mpeg" />
             curImgLink = list(dataset['articleImages'])[i]
-            if len(curImgLink) < len(link_text + "1.jpg"):
+            if len(curImgLink) < len(domain_text + "1.jpg"):
                 print(("rssmaker: ei lisa rssi pildilinki, kuna see on liiga lühike: " + str(curImgLink)))
             else:
                 item_enc_url = str(curImgLink).encode('ascii', 'xmlcharrefreplace')

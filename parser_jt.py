@@ -35,12 +35,17 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
             # load article into tree
             articleTree = makereq.getArticleData(articleUrl)
 
-            # descriptions
+            # description
             curArtDescParent1 = parsers_common.treeExtract(articleTree, '//main/article/div[@class="flex flex--align-items-stretch"]//section')  # as a parent
             curArtDescParent2 = parsers_common.treeExtract(articleTree, '//main/div[@class="wrap"]/div[@class="flex flex--align-items-stretch"]//section')  # as a parent
             curArtDescChilds1 = parsers_common.stringify_children(curArtDescParent1)
             curArtDescChilds2 = parsers_common.stringify_children(curArtDescParent2)
             articleDescriptions.append(curArtDescChilds1 + ' ' + curArtDescChilds2)
+
+            # image
+            curArtImg = parsers_common.treeExtract(articleTree, '//main/article/div[@class="flex flex--align-items-stretch"]//figure/img[1]/@src') or "//"
+            curArtImg = "http:" + curArtImg
+            articleImages.append(curArtImg)
 
             # timeformat magic from "24. detsember 2017 17:51" to datetime()
             curArtPubDate = articlePubDatesRaw[i]
