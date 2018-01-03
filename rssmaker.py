@@ -37,11 +37,26 @@ def rssmaker(dataset, title_text, domain_text, link_text, description_text):
     for i in range(0, len(dataset['articleIds'])):
         item = etree.SubElement(channel, "item")
 
-        item_title = etree.SubElement(item, "title")
-        item_title.text = list(dataset['articleTitles'])[i].encode('ascii', 'xmlcharrefreplace')
+        if ('articleIds' in dataset and i < len(list(dataset['articleIds'])) and list(dataset['articleIds'])[i] is not None):
+            # https://cyber.harvard.edu/rss/rss.html: A string that uniquely identifies the item.
+            item_guid = etree.SubElement(item, "guid")
+            item_guid.text = list(dataset['articleIds'])[i].encode('ascii', 'xmlcharrefreplace')
 
-        item_link = etree.SubElement(item, "link")
-        item_link.text = list(dataset['articleUrls'])[i].encode('ascii', 'xmlcharrefreplace')
+        if ('articleUrls' in dataset and i < len(list(dataset['articleUrls'])) and list(dataset['articleUrls'])[i] is not None):
+            item_link = etree.SubElement(item, "link")
+            item_link.text = list(dataset['articleUrls'])[i].encode('ascii', 'xmlcharrefreplace')
+        else:
+            print(("rssmaker: järgneval ID-l puudus aadress: " + str(item_guid.text)))
+            item_link = etree.SubElement(item, "link")
+            item_link.text = link.text
+
+        if ('articleTitles' in dataset and i < len(list(dataset['articleTitles'])) and list(dataset['articleTitles'])[i] is not None):
+            item_title = etree.SubElement(item, "title")
+            item_title.text = list(dataset['articleTitles'])[i].encode('ascii', 'xmlcharrefreplace')
+        else:
+            print(("rssmaker: järgneval aadressil puudus vajalik pealkiri: " + str(item_link.text)))
+            item_title = etree.SubElement(item, "title")
+            item_title.text = title.text + " " + item_guid.text
 
         if ('articleDescriptions' in dataset and i < len(list(dataset['articleDescriptions'])) and list(dataset['articleDescriptions'])[i] is not None):
             item_description = etree.SubElement(item, "description")
@@ -60,11 +75,6 @@ def rssmaker(dataset, title_text, domain_text, link_text, description_text):
             art_PubDate_timestamp = time.mktime(art_PubDate_tuple)
             art_PubDate_RFC2822 = utils.formatdate(art_PubDate_timestamp, True, True)
             item_pubDate.text = art_PubDate_RFC2822
-
-        if ('articleIds' in dataset and i < len(list(dataset['articleIds'])) and list(dataset['articleIds'])[i] is not None):
-            # https://cyber.harvard.edu/rss/rss.html: A string that uniquely identifies the item.
-            item_guid = etree.SubElement(item, "guid")
-            item_guid.text = list(dataset['articleIds'])[i].encode('ascii', 'xmlcharrefreplace')
 
         if ('articleImages' in dataset and i < len(list(dataset['articleImages'])) and list(dataset['articleImages'])[i] is not None):
             # https://cyber.harvard.edu/rss/rss.html

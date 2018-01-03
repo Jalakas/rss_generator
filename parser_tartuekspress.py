@@ -50,13 +50,13 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
             # load article into tree
             articleTree = makereq.getArticleData(articleUrl)
 
-            # descriptions
+            # description
             # curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[1]')   # as a parent
             # curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
             # articleDescriptions.append(curArtDescChilds)
             articleDescriptions.append(extractArticleBody(articleTree))
 
-            # images
+            # image
             curArtPubImage = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/a/img[@class="thumb"]/@src')
             articleImages.append(curArtPubImage)
 

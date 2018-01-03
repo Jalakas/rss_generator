@@ -30,7 +30,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         # get unique id from articleUrl
         articleIds.append(articleUrl.split('-')[-1])
 
-        # descriptions
+        # description
         articleDescriptions.append(parsers_common.toPlaintext(articleDescName[i]) + "<br>" + parsers_common.toPlaintext(articleDescLoc[i]))
 
         # timeformat magic from "12.12.2017" to datetime()
@@ -38,7 +38,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y")
         articlePubDates.append(curArtPubDate)
 
-        # titles
+        # title
         articleTitles[i] = parsers_common.toPlaintext(articleTitles[i]).capitalize()
 
     return {"articleDescriptions": articleDescriptions,

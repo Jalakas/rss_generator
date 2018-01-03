@@ -18,7 +18,7 @@ def domainUrls(domain, urls):
     """
     domainUrls = []
     for i in range(0, len(urls)):
-        domainUrls.append(domain.rstrip('/') + '/' + urls[i].lstrip('/'))
+        domainUrls.append(domain.rstrip('/') + '/' + urls[i].lstrip('./').lstrip('/'))
     return domainUrls
 
 
@@ -44,6 +44,8 @@ def shortMonthsToNumber(rawDateTimeText):
     rawDateTimeText = rawDateTimeText.replace('  ', ' ').strip().lower()
     rawDateTimeText = rawDateTimeText.replace('jaan', '01').replace('veeb', '02').replace('märts', '03').replace('aprill', '04').replace('mai', '05').replace('juuni', '06')
     rawDateTimeText = rawDateTimeText.replace('juuli', '07').replace('aug', '08').replace('sept', '09').replace('okt', '10').replace('nov', '11').replace('dets', '12')
+    rawDateTimeText = rawDateTimeText.replace('jan', '01').replace('feb', '02').replace('mar', '03').replace('apr', '04').replace('may', '05').replace('jun', '06')
+    rawDateTimeText = rawDateTimeText.replace('jul', '07').replace('aug', '08').replace('sep', '09').replace('oct', '10').replace('nov', '11').replace('dec', '12')
     return rawDateTimeText
 
 

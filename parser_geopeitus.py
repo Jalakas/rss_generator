@@ -29,7 +29,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         # get unique id from articleUrl
         articleIds.append(articleUrl.split('/')[-1])
 
-        # descriptions
+        # description
         curArtDescParent = articleDescriptionsParents[i]
         curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
         articleDescriptions.append(curArtDescChilds)

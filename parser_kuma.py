@@ -32,14 +32,14 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
 
-        # generate unical id from ArticleUrl
+        # generate unique id from ArticleUrl
         articleIds.append(parsers_common.urlToHash(articleUrl))
 
         if (get_article_bodies is True and i < maxPageURLstoVisit):
             # load article into tree
             articleTree = makereq.getArticleData(articleUrl)
 
-            # descriptions
+            # description
             curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@class="news-single-item"]/div[@class="news-single-content"]')  # as a parent
             curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
             articleDescriptions[i] = curArtDescChilds

@@ -9,6 +9,7 @@ import makereq
 import rssmaker
 import sys
 
+import parser_arutelud  # noqa F401
 import parser_avalikteenistus  # noqa F401
 import parser_bns  # noqa F401
 import parser_geopeitus  # noqa F401
@@ -27,6 +28,7 @@ RSStoGenerate = []
 maxArticleURLstoVisit = 10
 
 #                       name,               title,              description                             domain                                  domain_rss (optional)
+RSSdefinitions.append(['arutelud',          'Arutelud',         'Arutelud',                             'http://arutelud.com',                  'http://arutelud.com/viewtopic.php?f=3&t=4&sd=d&sk=t&st=7'])  # noqa E241
 RSSdefinitions.append(['avalikteenistus',   'Avalik teenistus', 'Avaliku teenistuse "Tartu" töökohad',  'http://www.rahandusministeerium.ee',   'http://www.rahandusministeerium.ee/et/avalikud-konkursid?page=1'])  # noqa E241
 RSSdefinitions.append(['bns',               'BNS',              'BNS - uudised Eestist, Lätist, Leedust ja maailmast', 'http://bns.ee',         ''])  # noqa E241
 RSSdefinitions.append(['geopeitus',         'Geopeitus',        'Geopeituse "Tartu" aarded',            'http://www.geopeitus.ee',              ''])  # noqa E241

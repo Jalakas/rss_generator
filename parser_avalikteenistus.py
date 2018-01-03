@@ -29,13 +29,13 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         # get unique id from articleUrl
         articleIds.append(articleUrl.split('/')[-1])
 
-        # descriptions
+        # description
         articleDescriptions.append(parsers_common.toPlaintext(articleDescName[i]) + "<br>" + parsers_common.toPlaintext(articleDescLoc[i]))
 
-        # titles
+        # title
         articleTitles[i] = parsers_common.toPlaintext(articleTitles[i]).capitalize()
 
-    # remove non "Tartu" ocation lines
+    # remove non "Tartu" location lines
     retArticleDescriptions = []
     retArticleIds = []
     retArticleImages = []

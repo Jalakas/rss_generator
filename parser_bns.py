@@ -26,7 +26,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
 
-        # get unical id from articleUrl
+        # get unique id from articleUrl
         articleIds.append(articleUrl.split('/')[-2])
 
         # description
