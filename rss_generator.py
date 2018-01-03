@@ -14,6 +14,7 @@ import parser_arutelud  # noqa F401
 import parser_avalikteenistus  # noqa F401
 import parser_bns  # noqa F401
 import parser_geopeitus  # noqa F401
+import parser_hv  # noqa F401
 import parser_jt  # noqa F401
 import parser_kuma  # noqa F401
 import parser_lounaeestlane  # noqa F401
@@ -33,6 +34,7 @@ RSSdefinitions.append(['arutelud',          'Arutelud',         'Arutelud',     
 RSSdefinitions.append(['avalikteenistus',   'Avalik teenistus', 'Avaliku teenistuse "Tartu" töökohad',  'http://www.rahandusministeerium.ee',   'http://www.rahandusministeerium.ee/et/avalikud-konkursid?page=1'])  # noqa E241
 RSSdefinitions.append(['bns',               'BNS',              'BNS - uudised Eestist, Lätist, Leedust ja maailmast', 'http://bns.ee',         ''])  # noqa E241
 RSSdefinitions.append(['geopeitus',         'Geopeitus',        'Geopeituse "Tartu" aarded',            'http://www.geopeitus.ee',              ''])  # noqa E241
+RSSdefinitions.append(['hv',                'Hinnavaatlus',     'Hinnavaatluse uudised',                'http://www.hinnavaatlus.ee',           'http://www.hinnavaatlus.ee/#news'])  # noqa E241
 RSSdefinitions.append(['jt',                'Järva Teataja',    'Järva Teataja',                        'http://jarvateataja.postimees.ee',     'http://jarvateataja.postimees.ee/search'])  # noqa E241
 RSSdefinitions.append(['kuma',              'Kuma',             'Kuma - Kesk-Eesti uudised',            'http://kuma.fm',                       ''])  # noqa E241
 RSSdefinitions.append(['lounaeestlane',     'Lõunaeestlane',    'Lõunaeestlane',                        'http://www.lounaeestlane.ee',          ''])  # noqa E241
@@ -93,9 +95,14 @@ for curRSS in RSStoGenerate:
     dataset = curParser.getArticleListsFromHtml(pageTree, curDomain, maxArticleURLstoVisit)
     rss = rssmaker.rssmaker(dataset, curTitle, curDomain, curDomainRSS, curDescription)
 
-    os.rename(latestFeedsPath + '/' + curFilename, oldersFeedsPath + '/' + curFilename)
+    try:
+        # save old feed if there is any
+        os.rename(latestFeedsPath + '/' + curFilename, oldersFeedsPath + '/' + curFilename)
+    except Exception:
+        print('rss_generaator: Hoiatus. Ei õnnestunud liigutada eelmist sisu asukohast: ' + latestFeedsPath + '/' + curFilename)
 
     try:
+        # write feed
         rss.write(open(latestFeedsPath + '/' + curFilename, 'wb'),
                   encoding='UTF-8', pretty_print=True)
         print('rss_generaator: Fail ' + curFilename + ' salvestatud.')
