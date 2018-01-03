@@ -6,6 +6,7 @@
 """
 
 import makereq
+import os
 import rssmaker
 import sys
 
@@ -62,6 +63,14 @@ if len(RSStoGenerate) < 1:
     print('rss_generaator: Ei suutnud tuvastada sisendist sobivat nime ega numbrit, genereeritakse kõik vood.')
     RSStoGenerate = range(0, len(RSSdefinitions))
 
+# make sure we have subfolders
+latestFeedsPath = 'latest_feeds'
+oldersFeedsPath = 'older_feeds'
+if not os.path.exists(latestFeedsPath):
+    os.makedirs(latestFeedsPath)
+if not os.path.exists(oldersFeedsPath):
+    os.makedirs(oldersFeedsPath)
+
 # generate all feeds
 for curRSS in RSStoGenerate:
 
@@ -84,8 +93,10 @@ for curRSS in RSStoGenerate:
     dataset = curParser.getArticleListsFromHtml(pageTree, curDomain, maxArticleURLstoVisit)
     rss = rssmaker.rssmaker(dataset, curTitle, curDomain, curDomainRSS, curDescription)
 
+    os.rename(latestFeedsPath + '/' + curFilename, oldersFeedsPath + '/' + curFilename)
+
     try:
-        rss.write(open(curFilename, 'wb'),
+        rss.write(open(latestFeedsPath + '/' + curFilename, 'wb'),
                   encoding='UTF-8', pretty_print=True)
         print('rss_generaator: Fail ' + curFilename + ' salvestatud.')
     except Exception:
