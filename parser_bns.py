@@ -16,11 +16,10 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articleDescriptions = pageTree.xpath('//div[@class="js-newsline-container"]/div/a/text()')
     articleIds = []
     articleImages = []
-    articlePubDates = []
+    articlePubDates = pageTree.xpath('//div[@class="js-newsline-container"]/span[1]/text()')
     articleTitles = pageTree.xpath('//div[@class="js-newsline-container"]/div/a/text()')
     articleUrls = pageTree.xpath('//div[@class="js-newsline-container"]/div/a/@href')
 
-    articlePubDatesRaw = pageTree.xpath('//div[@class="js-newsline-container"]/span[1]/text()')
     articleDescriptionsTag = pageTree.xpath('//div[@class="js-newsline-container"]/div/span[1]/text()')
 
     for i in range(0, len(articleUrls)):
@@ -33,10 +32,10 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         articleDescriptions[i] = articleDescriptionsTag[i] + "<br>" + articleDescriptions[i]
 
         # timeformat magic from "14 dets  2017 11:34" to datetime()
-        curArtPubDate = articlePubDatesRaw[i]
+        curArtPubDate = articlePubDates[i]
         curArtPubDate = parsers_common.shortMonthsToNumber(curArtPubDate)
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d %m %Y %H:%M")
-        articlePubDates.append(curArtPubDate)
+        articlePubDates[i] = curArtPubDate
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,

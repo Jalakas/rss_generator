@@ -16,12 +16,11 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articleDescriptions = []
     articleIds = []
     articleImages = []
-    articlePubDates = []
+    articlePubDates = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
     articleTitles = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
     articleUrls = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/a/@href')
 
     articleDescriptionsParents = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_bottom"]/div[@class="audioitem_item_desc"]')  # as a parent
-    articlePubDatesRaw = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
@@ -35,10 +34,10 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         articleDescriptions.append(curArtDesc)
 
         # timeformat magic from "15.12.2017 - L" to datetime()
-        curArtPubDate = articlePubDatesRaw[i].split('-')[0]
+        curArtPubDate = articlePubDates[i].split('-')[0]
         curArtPubDate = parsers_common.shortMonthsToNumber(curArtPubDate)
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y")
-        articlePubDates.append(curArtPubDate)
+        articlePubDates[i] = curArtPubDate
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,

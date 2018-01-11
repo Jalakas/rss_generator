@@ -30,7 +30,11 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         articleIds.append(articleUrl.split('/')[-1])
 
         # description
-        articleDescriptions.append(parsers_common.toPlaintext(articleDescName[i]) + "<br>" + parsers_common.toPlaintext(articleDescLoc[i]))
+        try:
+            articleDescriptions.append(parsers_common.toPlaintext(articleDescName[i]) + "<br>" + parsers_common.toPlaintext(articleDescLoc[i]))
+        except Exception:
+            print("parser_avalikteenistus.py: leht on tuksis, lisame tühja kirjelduse")
+            articleDescriptions.append(" ")
 
         # title
         articleTitles[i] = parsers_common.toPlaintext(articleTitles[i]).capitalize()
@@ -42,6 +46,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     retArticlePubDates = []
     retArticleTitles = []
     retArticleUrls = []
+
     for i in range(0, len(articleUrls)):
         if ('Tartu' in articleDescriptions[i]):
             retArticleDescriptions.append(articleDescriptions[i])

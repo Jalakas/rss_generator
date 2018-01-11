@@ -16,11 +16,9 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articleDescriptions = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/div/p/text()')
     articleIds = []
     articleImages = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/p/img/@src')
-    articlePubDates = []
+    articlePubDates = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/@title')
     articleTitles = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/div/h3/text()')
     articleUrls = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/@href')
-
-    articlePubDatesRaw = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/@title')
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
@@ -32,9 +30,9 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         articleDescriptions[i] = parsers_common.toPlaintext(articleDescriptions[i])
 
         # timeformat magic from "03.01.2018 11:09.08 [Tanel]" to datetime()
-        curArtPubDate = articlePubDatesRaw[i].split('[')[-2].strip()
+        curArtPubDate = articlePubDates[i].split('[')[-2].strip()
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y %H:%M.%S")
-        articlePubDates.append(curArtPubDate)
+        articlePubDates[i] = curArtPubDate
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,

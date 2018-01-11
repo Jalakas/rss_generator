@@ -16,13 +16,12 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articleDescriptions = []
     articleIds = []
     articleImages = []
-    articlePubDates = []
+    articlePubDates = pageTree.xpath('//div/div[@class="inner"]/div[@class="postbody"]/p/text()[2]')
     articleTitles = pageTree.xpath('//div/div[@class="inner"]/div[@class="postbody"]/p[@class="author"]/strong//text()')
     articleUrls = pageTree.xpath('//div/div[@class="inner"]/div[@class="postbody"]/p[@class="author"]/a/@href')
     articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
     articleDescriptionsParents = pageTree.xpath('//div/div[@class="inner"]/div[@class="postbody"]/div[@class="content"]')  # as a parent
-    articlePubDatesRaw = pageTree.xpath('//div/div[@class="inner"]/div[@class="postbody"]/p/text()[2]')
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
@@ -38,10 +37,10 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         articleTitles[i] = articleTitles[i] + " @" + domain
 
         # timeformat magic from "» 29 Dec 2017 13:46" to datetime()
-        curArtPubDate = articlePubDatesRaw[i]
+        curArtPubDate = articlePubDates[i]
         curArtPubDate = parsers_common.shortMonthsToNumber(curArtPubDate)
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "» %d %m %Y %H:%M")
-        articlePubDates.append(curArtPubDate)
+        articlePubDates[i] = curArtPubDate
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,
