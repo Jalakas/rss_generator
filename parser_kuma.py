@@ -51,9 +51,12 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
             articlePubDates.append(curArtPubDate)
         else:
             if i < len(articlePubYear) and (int(articlePubYear[i].strip()) > 2016):
-                curYear = articlePubYear[i].strip()
-            curArtPubDate = articlePubDay[i].strip() + " " + articlePubMonth[i].strip() + " " + curYear
-            curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d %m %Y")
+                curArtPubDate = articlePubDay[i].strip() + " " + articlePubMonth[i].strip() + " " + articlePubYear[i].strip()
+                curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d %m %Y")
+            else:
+                curArtPubDate = articlePubDay[i].strip() + " " + articlePubMonth[i].strip()
+                curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d %m")
+
             articlePubDates.append(curArtPubDate)
 
     return {"articleDescriptions": articleDescriptions,

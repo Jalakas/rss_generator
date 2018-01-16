@@ -1,3 +1,6 @@
 *.pyc
 *rss
 .directory
+article_cache/
+latest_feeds/
+older_feeds/

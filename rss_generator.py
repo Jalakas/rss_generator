@@ -20,6 +20,7 @@ import parser_kuma  # noqa F401
 import parser_lounaeestlane  # noqa F401
 import parser_nommeraadio  # noqa F401
 import parser_pohjarannik  # noqa F401
+import parser_ra  # noqa F401
 import parser_stokker  # noqa F401
 import parser_tartuekspress  # noqa F401
 import parser_teabeleht  # noqa F401
@@ -27,7 +28,7 @@ import parser_tootukassa  # noqa F401
 
 RSSdefinitions = []
 RSStoGenerate = []
-maxArticleURLstoVisit = 10
+maxArticleURLstoVisit = 50
 
 #                       name,               title,              description                             domain                                  domain_rss (optional)
 RSSdefinitions.append(['arutelud',          'Arutelud',         'Arutelud',                             'http://arutelud.com',                  'http://arutelud.com/viewtopic.php?f=3&t=4&sd=d&sk=t&st=7'])  # noqa E241
@@ -40,8 +41,9 @@ RSSdefinitions.append(['kuma',              'Kuma',             'Kuma - Kesk-Ees
 RSSdefinitions.append(['lounaeestlane',     'Lõunaeestlane',    'Lõunaeestlane',                        'http://www.lounaeestlane.ee',          ''])  # noqa E241
 RSSdefinitions.append(['nommeraadio',       'Nõmme Raadio',     'Nõmme Raadio - radikaalseim raadio Eestis!', 'http://www.nommeraadio.ee',      ''])  # noqa E241
 RSSdefinitions.append(['pohjarannik',       'Põhjarannik',      'Põhjarannik',                          'http://pr.pohjarannik.ee',             ''])  # noqa E241
-RSSdefinitions.append(['stokker',           'Stokker - Outlet', 'Stokker - Outlet',                     'http://www.stokker.ee',                'http://www.stokker.ee/kampaaniad/tooriistade-outlet?instorage=1&limit=100'])  # noqa E241
-RSSdefinitions.append(['tartuekspress',     'Tartu Ekspress',   'Tartu Ekspress - Kõik uudised',        'http://tartuekspress.ee',              'http://tartuekspress.ee/index.php?page=20&type=3'])  # noqa E241
+RSSdefinitions.append(['ra',                'Rahvusarhiiv',     'Rahvusarhiiv - uudised',               'http://www.ra.ee',                     'http://www.ra.ee/uudised'])  # noqa E241
+RSSdefinitions.append(['stokker',           'Stokker - Outlet', 'Stokker - Outlet',                     'http://www.stokker.ee',                'http://www.stokker.ee/kampaaniad/tooriistade-outlet?instorage=1&limit=750&page=1'])  # noqa E241
+RSSdefinitions.append(['tartuekspress',     'Tartu Ekspress',   'Tartu Ekspress - kõik uudised',        'http://tartuekspress.ee',              'http://tartuekspress.ee/index.php?page=20&type=3'])  # noqa E241
 RSSdefinitions.append(['teabeleht',         'Teabeleht',        'Teabeleht',                            'http://www.teabeleht.com',             ''])  # noqa E241
 RSSdefinitions.append(['tootukassa',        'Töötukassa',       'Töötukassa tööpakkumised',             'http://www.tootukassa.ee',             'http://www.tootukassa.ee/toopakkumised?location_id=0051,0795&education_id=KUTSEKORGHARIDUS,BAKALAUREUSEOPE,MAGISTRIOPE'])  # noqa E241
 
@@ -87,7 +89,7 @@ for curRSS in RSStoGenerate:
 
     try:
         # load page into tree
-        pageTree = makereq.getArticleData(curDomainRSS)
+        pageTree = makereq.getArticleData(curDomainRSS, mainPage=True)
     except Exception:
         print('rss_generaator: Viga! Ei suutnud andmeid pärida leheküljelt: ' + curDomainRSS)
         continue

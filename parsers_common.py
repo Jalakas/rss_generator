@@ -29,7 +29,16 @@ def rawToDatetime(rawDateTimeText, rawDateTimeSyntax):
     rawDateTimeSyntax = selle teksti süntaks, näiteks "%d. %m %Y /"
     Süntaksi seletus: https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
     """
-    ret = datetime.datetime.fromtimestamp(mktime(time.strptime(rawDateTimeText, rawDateTimeSyntax)))
+    time_tuple_list = list(time.strptime(rawDateTimeText, rawDateTimeSyntax))
+    if time_tuple_list[0] == 1900:
+        if time_tuple_list[1] > int(time.strftime('%m')):
+            print('parsers_common: muudame puuduva aasta eelmiseks aastaks')
+            time_tuple_list[0] = int(time.strftime('%Y')) - 1
+        else:
+            print('parsers_common: muudame puuduva aasta praeguseks aastaks')
+            time_tuple_list[0] = int(time.strftime('%Y'))
+    time_tuple = tuple(time_tuple_list)
+    ret = datetime.datetime.fromtimestamp(mktime(time_tuple))
     return ret
 
 
@@ -74,7 +83,8 @@ def toPlaintext(rawText):
     Tagastab formaatimata teksti
     Sisend utf-8 kujul rawText
     """
-    return rawText.replace('</p>', ' </p>').replace('</td>', ' </td>').replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('    ', ' ').replace('   ', ' ').replace('  ', ' ').strip().rstrip('</').rstrip('<')
+    return rawText.replace('<strong>', '<br><strong>').replace('</td>', ' </td>').replace('</p>', ' </p>').\
+        replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('    ', ' ').replace('   ', ' ').replace('  ', ' ').strip().rstrip('</').rstrip('<')
 
 
 def treeExtract(tree, xpathValue):

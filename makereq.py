@@ -7,19 +7,40 @@
 
 import requests
 from lxml import html
+import os
 
 
-def getArticleData(articleURL):
+def getArticleData(articleURL, mainPage=False):
     """
     Artikli lehe pärimine
     """
-    aricleDataHtml = makeReq(articleURL)
+
+    cacheFolder = articleURL.split('/')[2]
+    cacheArcitcleURL = articleURL.replace('/', '|')
+
+    if mainPage is True:
+        aricleDataHtml = makeReq(articleURL)
+    else:
+        try:
+            with open('article_cache/' + cacheFolder + '/' + cacheArcitcleURL, 'rb') as cacheReadFile:
+                aricleDataHtml = cacheReadFile.read()
+        except Exception:
+            aricleDataHtml = makeReq(articleURL)
 
     try:
         aricleDataHtml.decode("utf-8")
     except Exception:
-        print("makereg: parandame ebaõnnestunud 'UTF-8' as 'iso8859_15' veebilehe kodeeringu veebilehel: " + articleURL)
+        print("makereg: parandame ebaõnnestunud 'UTF-8' as 'iso8859_15' kodeeringu veebilehel: " + articleURL)
         aricleDataHtml = fixBrokenUTF8asEncoding(aricleDataHtml, 'iso8859_15')
+
+    # write article to cache
+    if mainPage is False:
+        if not os.path.exists('article_cache'):
+            os.makedirs('article_cache')
+        if not os.path.exists('article_cache/' + cacheFolder):
+            os.makedirs('article_cache/' + cacheFolder)
+        with open('article_cache/' + cacheFolder + '/' + cacheArcitcleURL, 'wb') as cacheWriteFile:
+            cacheWriteFile.write(aricleDataHtml)
 
     articleTree = html.fromstring(aricleDataHtml)
     return articleTree
@@ -60,5 +81,6 @@ def makeReq(link):
         'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0',
         'Accept-Encoding': 'gzip, deflate, compress'}
     session = requests.session()
+    print('makereg: teeme internetipäringu lehele: ' + link)
     req = session.get(link, headers=headers)
     return req.content
