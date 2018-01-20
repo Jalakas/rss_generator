@@ -52,7 +52,7 @@ def rssmaker(dataset, title_text, domain_text, link_text, description_text):
 
         if ('articleTitles' in dataset and i < len(list(dataset['articleTitles'])) and list(dataset['articleTitles'])[i] is not None):
             item_title = etree.SubElement(item, "title")
-            item_title.text = list(dataset['articleTitles'])[i].encode('ascii', 'xmlcharrefreplace')
+            item_title.text = list(dataset['articleTitles'])[i].encode('ascii', 'xmlcharrefreplace').strip()
         else:
             print(("rssmaker: järgneval aadressil puudus vajalik pealkiri: " + str(item_link.text)))
             item_title = etree.SubElement(item, "title")
