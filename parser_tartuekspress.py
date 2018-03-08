@@ -49,22 +49,30 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         if (get_article_bodies is True and i < maxPageURLstoVisit):
             # load article into tree
             articleTree = makereq.getArticleData(articleUrl)
+            articleTreeBuf = makereq.getArticleData(articleUrl)
 
             # description
-            # curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[1]')   # as a parent
-            # curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
-            # articleDescriptions.append(curArtDescChilds)
-            articleDescriptions.append(extractArticleBody(articleTree))
+            curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]')   # as a parent
+            curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
+            curArtDescChilds = curArtDescChilds.split('<a name="fb_share">')[0]
+            articleDescriptions.append(curArtDescChilds)
+
+            # it's not possible to make two similar search on same dataset
+            articleTree = articleTreeBuf
 
             # image
-            curArtPubImage = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/a/img[@class="thumb"]/@src')
+            curArtPubImage = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/a/img[@class="thumb"]/@src') or "/"
             articleImages.append(curArtPubImage)
 
             # timeformat magic from "13/12/2017 22:24:59" to to datetime()
-            curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[*]/i/b[2]/text()')
-            curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d/%m/%Y %H:%M:%S")
-            articlePubDates.append(curArtPubDate)
+            try:
+                curArtPubDate = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[*]/i/b[2]/text()')
+                curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d/%m/%Y %H:%M:%S")
+                articlePubDates.append(curArtPubDate)
+            except Exception:
+                print("tartuekspress: kellaaja hankimine ebaõnnestus! Liiga palju <P> elemente?")
 
+    # korrastame pildilingid
     articleImages = parsers_common.domainUrls(domain, articleImages)
 
     return {"articleDescriptions": articleDescriptions,

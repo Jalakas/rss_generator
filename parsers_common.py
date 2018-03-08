@@ -7,6 +7,7 @@
 
 import datetime
 import hashlib
+import makereq
 import time
 from lxml import html
 from time import mktime
@@ -51,7 +52,7 @@ def longMonthsToNumber(rawDateTimeText):
 
 def shortMonthsToNumber(rawDateTimeText):
     rawDateTimeText = rawDateTimeText.replace('  ', ' ').strip().lower()
-    rawDateTimeText = rawDateTimeText.replace('jaan', '01').replace('veeb', '02').replace('märts', '03').replace('aprill', '04').replace('mai', '05').replace('juuni', '06')
+    rawDateTimeText = rawDateTimeText.replace('jaan', '01').replace('veebr', '02').replace('veeb', '02').replace('märts', '03').replace('aprill', '04').replace('mai', '05').replace('juuni', '06')
     rawDateTimeText = rawDateTimeText.replace('juuli', '07').replace('aug', '08').replace('sept', '09').replace('okt', '10').replace('nov', '11').replace('dets', '12')
     rawDateTimeText = rawDateTimeText.replace('jan', '01').replace('feb', '02').replace('mar', '03').replace('apr', '04').replace('may', '05').replace('jun', '06')
     rawDateTimeText = rawDateTimeText.replace('jul', '07').replace('aug', '08').replace('sep', '09').replace('oct', '10').replace('nov', '11').replace('dec', '12')
@@ -73,7 +74,12 @@ def stringify_children(node, pageTreeEcoding='utf-8'):
     opening_tag = len(node.tag) + 2
     closing_tag = -(len(node.tag) + 4)
     ret = html.tostring(node, encoding=pageTreeEcoding)[opening_tag:closing_tag]
-    ret = ret.decode(pageTreeEcoding)
+    try:
+        ret = ret.decode(pageTreeEcoding)
+    except Exception:
+        print("parsers_common: parandame ebaõnnestunud 'UTF-8' kodeeringu")
+        ret = makereq.fixBrokenUTF8asEncoding(ret, 'iso8859_15')
+        ret = ret.decode(pageTreeEcoding)
     ret = toPlaintext(ret)
     return ret
 

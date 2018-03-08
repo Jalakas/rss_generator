@@ -17,7 +17,7 @@ import parser_geopeitus  # noqa F401
 import parser_hv  # noqa F401
 import parser_jt  # noqa F401
 import parser_kuma  # noqa F401
-import parser_lounaeestlane  # noqa F401
+# import parser_lounaeestlane  # noqa F401
 import parser_nommeraadio  # noqa F401
 import parser_pohjarannik  # noqa F401
 import parser_ra  # noqa F401
@@ -38,11 +38,11 @@ RSSdefinitions.append(['geopeitus',         'Geopeitus',        'Geopeituse "Tar
 RSSdefinitions.append(['hv',                'Hinnavaatlus',     'Hinnavaatluse uudised',                'http://www.hinnavaatlus.ee',           'http://www.hinnavaatlus.ee/#news'])  # noqa E241
 RSSdefinitions.append(['jt',                'Järva Teataja',    'Järva Teataja',                        'http://jarvateataja.postimees.ee',     'http://jarvateataja.postimees.ee/search'])  # noqa E241
 RSSdefinitions.append(['kuma',              'Kuma',             'Kuma - Kesk-Eesti uudised',            'http://kuma.fm',                       ''])  # noqa E241
-RSSdefinitions.append(['lounaeestlane',     'Lõunaeestlane',    'Lõunaeestlane',                        'http://www.lounaeestlane.ee',          ''])  # noqa E241
+# RSSdefinitions.append(['lounaeestlane',     'Lõunaeestlane',    'Lõunaeestlane',                        'http://www.lounaeestlane.ee',          ''])  # noqa E241
 RSSdefinitions.append(['nommeraadio',       'Nõmme Raadio',     'Nõmme Raadio - radikaalseim raadio Eestis!', 'http://www.nommeraadio.ee',      ''])  # noqa E241
-RSSdefinitions.append(['pohjarannik',       'Põhjarannik',      'Põhjarannik',                          'http://pr.pohjarannik.ee',             ''])  # noqa E241
+RSSdefinitions.append(['pohjarannik',       'Põhjarannik',      'Põhjarannik',                          'http://pohjarannik.ee/viimased-uudised/',''])  # noqa E241
 RSSdefinitions.append(['ra',                'Rahvusarhiiv',     'Rahvusarhiiv - uudised',               'http://www.ra.ee',                     'http://www.ra.ee/uudised'])  # noqa E241
-RSSdefinitions.append(['stokker',           'Stokker - Outlet', 'Stokker - Outlet',                     'http://www.stokker.ee',                'http://www.stokker.ee/kampaaniad/tooriistade-outlet?instorage=1&limit=750&page=1'])  # noqa E241
+RSSdefinitions.append(['stokker',           'Stokker - Outlet', 'Stokker - Outlet',                     'http://www.stokker.ee',                'http://www.stokker.ee/kampaaniad/tooriistade-outlet?instorage=1&limit=750&page=3'])  # noqa E241
 RSSdefinitions.append(['tartuekspress',     'Tartu Ekspress',   'Tartu Ekspress - kõik uudised',        'http://tartuekspress.ee',              'http://tartuekspress.ee/index.php?page=20&type=3'])  # noqa E241
 RSSdefinitions.append(['teabeleht',         'Teabeleht',        'Teabeleht',                            'http://www.teabeleht.com',             ''])  # noqa E241
 RSSdefinitions.append(['tootukassa',        'Töötukassa',       'Töötukassa tööpakkumised',             'http://www.tootukassa.ee',             'http://www.tootukassa.ee/toopakkumised?location_id=0051,0795&education_id=KUTSEKORGHARIDUS,BAKALAUREUSEOPE,MAGISTRIOPE'])  # noqa E241

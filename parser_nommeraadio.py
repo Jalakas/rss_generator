@@ -33,11 +33,15 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         curArtDesc = parsers_common.stringify_children(curArtDesc)
         articleDescriptions.append(curArtDesc)
 
-        # timeformat magic from "15.12.2017 - L" to datetime()
-        curArtPubDate = articlePubDates[i].split('-')[0]
-        curArtPubDate = parsers_common.shortMonthsToNumber(curArtPubDate)
-        curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y")
-        articlePubDates[i] = curArtPubDate
+        try:
+            # timeformat magic from "15.12.2017 - L" to datetime()
+            curArtPubDate = articlePubDates[i] or '15.12.2017 - L'
+            curArtPubDate = curArtPubDate.split('-')[0]
+            curArtPubDate = parsers_common.shortMonthsToNumber(curArtPubDate)
+            curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y")
+            articlePubDates[i] = curArtPubDate
+        except Exception:
+            print('parser_nommeraadio: toores aeg puudub või on vigane')
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,

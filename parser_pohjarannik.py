@@ -5,6 +5,7 @@
     Lõunaeestlane RSS-voo sisendite parsimine
 """
 
+import makereq
 import parsers_common
 
 
@@ -13,24 +14,29 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
     """
 
-    articleDescriptions = pageTree.xpath('//div[@class="midColPost"]/p/text()')
+    articleDescriptions = []
     articleIds = []
-    articleImages = pageTree.xpath('//div[@class="midColPost"]/a/img/@src')
-    articlePubDates = pageTree.xpath('//div[@class="midColPost"]/span/text()[1]')
-    articleTitles = pageTree.xpath('//div[@class="midColPost"]/h2/a/@title')
-    articleUrls = pageTree.xpath('//div[@class="midColPost"]/h2/a/@href')
+    articleImages = pageTree.xpath('//div[@class="image_container"]/a/img/@img')
+    articlePubDates = []
+    articleTitles = pageTree.xpath('//div[@class="article_content"]/div[@class="article_title_wrapper"]/a[1]/text()')
+    articleUrls = pageTree.xpath('//div[@class="article_content"]/div[@class="article_title_wrapper"]/a[1]/@href')
+
+    get_article_bodies = True
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
 
-        # get unique id from articleUrl
-        articleIds.append(articleUrl.split("?p=")[1])
+        # generate unique id from ArticleUrl
+        articleIds.append(parsers_common.urlToHash(articleUrl))
 
-        # timeformat magic from "15. detsember 2017 / " to datetime()
-        curArtPubDate = articlePubDates[i]
-        curArtPubDate = parsers_common.longMonthsToNumber(curArtPubDate)
-        curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d. %m %Y /")
-        articlePubDates[i] = curArtPubDate
+        if (get_article_bodies is True and i < maxPageURLstoVisit):
+            # load article into tree
+            articleTree = makereq.getArticleData(articleUrl)
+
+            # description
+            curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@class="article full_article column"]/div[@class="article_content"]')  # as a parent
+            curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
+            articleDescriptions.append(curArtDescChilds)
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,
