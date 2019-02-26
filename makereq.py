@@ -15,34 +15,47 @@ def getArticleData(articleURL, mainPage=False):
     Artikli lehe pärimine
     """
 
-    cacheFolder = articleURL.split('/')[2]
-    cacheArcitcleURL = articleURL.replace('/', '|')
+    cacheArticleURL = articleURL.replace('/', '|')
+    cacheDomainFolder = articleURL.split('/')[2]
+
+    osPath = os.path.dirname(os.path.abspath(__file__))
+    osCacheFolder = osPath + '/' + 'article_cache'
+    osCacheFolderDomain = osCacheFolder + '/' + cacheDomainFolder
+    osCacheFolderDomainArticle = osCacheFolderDomain + '/' + cacheArticleURL
 
     if mainPage is True:
-        aricleDataHtml = makeReq(articleURL)
+        # põhilehekülg tuleb alati alla laadida Internetist
+        htmlPageString = makeReq(articleURL)
     else:
         try:
-            with open('article_cache/' + cacheFolder + '/' + cacheArcitcleURL, 'rb') as cacheReadFile:
-                aricleDataHtml = cacheReadFile.read()
+            # proovime kõigepealt hankida kettalt
+            with open(osCacheFolderDomainArticle, 'rb') as cacheReadFile:
+                # print("makereg: proovime kettalt lugeda " + osCacheFolderDomainArticle)
+                htmlPageString = cacheReadFile.read()
         except Exception:
-            aricleDataHtml = makeReq(articleURL)
+            # kui kettalt ei leidnud, hangime veebist
+            htmlPageString = makeReq(articleURL)
 
+            # ja salvestame alati kettale
+            if not os.path.exists(osCacheFolder):
+                os.makedirs(osCacheFolder)
+            if not os.path.exists(osCacheFolderDomain):
+                os.makedirs(osCacheFolderDomain)
+            with open(osCacheFolderDomainArticle, 'wb') as cacheWriteFile:
+                cacheWriteFile.write(htmlPageString)
+
+    # kontrollime kodeeringut
     try:
-        aricleDataHtml.decode("utf-8")
+        htmlPageString.decode("utf-8")
     except Exception:
         print("makereg: parandame ebaõnnestunud 'UTF-8' as 'iso8859_15' kodeeringu veebilehel: " + articleURL)
-        aricleDataHtml = fixBrokenUTF8asEncoding(aricleDataHtml, 'iso8859_15')
+        htmlPageString = fixBrokenUTF8asEncoding(htmlPageString, 'iso8859_15')
 
-    # write article to cache
-    if mainPage is False:
-        if not os.path.exists('article_cache'):
-            os.makedirs('article_cache')
-        if not os.path.exists('article_cache/' + cacheFolder):
-            os.makedirs('article_cache/' + cacheFolder)
-        with open('article_cache/' + cacheFolder + '/' + cacheArcitcleURL, 'wb') as cacheWriteFile:
-            cacheWriteFile.write(aricleDataHtml)
+    # eemaldame ::before, sest see teeb tõenäoliselt XML extractori katki
+    # htmlPageString = htmlPageString.replace("::before", "")
 
-    articleTree = html.fromstring(aricleDataHtml)
+    # teeme html puu
+    articleTree = html.fromstring(htmlPageString)
     return articleTree
 
 
@@ -54,16 +67,16 @@ def fixBrokenUTF8asEncoding(brokenBytearray, encoding='iso8859_15'):  # 'iso8859
 
     curBytearray = brokenBytearray.decode(encoding, 'ignore')
 
-    for curInt in range(0x80, 383):  # ž on 382
+    for curInt in range(0x80, 383):  # ž on 382 ja selle juures lõpetame
         byteUnicode = str(chr(curInt))
 
         try:
             byteUTF8inEncode = byteUnicode.encode('utf-8').decode(encoding)
         except Exception:
-            #  print("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: pole sümbolit")
+            # print("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: pole sümbolit")
             continue
 
-        #  print("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: " + str(byteUTF8inEncode))
+        # print("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: " + str(byteUTF8inEncode))
         curBytearray = curBytearray.replace(byteUTF8inEncode, byteUnicode)
     curBytearray = curBytearray.replace('â', '"')
     curBytearray = curBytearray.replace('â', '"')
@@ -77,10 +90,12 @@ def makeReq(link):
     """
     Päringu teostamine HTML-i allalaadimiseks
     """
+
     headers = {
         'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0',
         'Accept-Encoding': 'gzip, deflate, compress'}
     session = requests.session()
+
     print('makereg: teeme internetipäringu lehele: ' + link)
     req = session.get(link, headers=headers)
     return req.content

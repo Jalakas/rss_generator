@@ -42,6 +42,10 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "» %d %m %Y %H:%M")
         articlePubDates[i] = curArtPubDate
 
+        if (articleDescriptions[i].find("jumal") > 0 or articleDescriptions[i].find("Jumal") > 0):
+            print('Eemaldame jumalat sisaldava kande')
+            i = i - 1
+
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,
             "articleImages": articleImages,

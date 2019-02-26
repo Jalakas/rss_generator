@@ -22,6 +22,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
     articleDescriptionsParents = pageTree.xpath('//div[@class="product_camp_box   w"]/a/div/div[@class="leftC"]')  # as a parent
+    articlePriceParents = pageTree.xpath('//div[@class="product_camp_box   w"]/div[@class="priceCont"]')  # as a parent
 
     for i in range(0, len(articleUrls)):
         articleUrl = articleUrls[i]
@@ -32,7 +33,10 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         # description
         curArtDescParent = articleDescriptionsParents[i]
         curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
-        articleDescriptions.append(curArtDescChilds)
+        curArtPriceParent = articlePriceParents[i]
+        curArtPriceChilds = parsers_common.stringify_children(curArtPriceParent)
+
+        articleDescriptions.append(curArtDescChilds + "<br>" + curArtPriceChilds)
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,

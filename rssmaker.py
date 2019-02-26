@@ -34,6 +34,9 @@ def rssmaker(dataset, title_text, domain_text, link_text, description_text):
     ttl = etree.SubElement(channel, "ttl")
     ttl.text = str(120)
 
+    if (len(dataset['articleIds']) < 1):
+        print("rssmaker: ei leitud ühtegi ID väärtust lingilt: " + str(link_text))
+
     for i in range(0, len(dataset['articleIds'])):
         item = etree.SubElement(channel, "item")
 
@@ -81,7 +84,7 @@ def rssmaker(dataset, title_text, domain_text, link_text, description_text):
             # <enclosure url="http://www.scripting.com/mp3s/weatherReportSuite.mp3" length="12216320" type="audio/mpeg" />
             curImgLink = list(dataset['articleImages'])[i]
             if len(curImgLink) < len(domain_text + "1.jpg"):
-                print(("rssmaker: ei lisa rssi pildilinki, kuna see on liiga lühike: " + str(curImgLink)))
+                print(("rssmaker: ei lisa RSS-i pildilinki, kuna see on liiga lühike: " + str(curImgLink)))
             else:
                 item_enc_url = str(curImgLink).encode('ascii', 'xmlcharrefreplace')
                 if b'.jpg' in (item_enc_url):
