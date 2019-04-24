@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+    Privaatsed seadistused
+"""
+
+upload_url = 'http://your.url/script.php'
+upload_name = 'filename'
+
+headers = {
+    'Accept-Encoding': 'gzip, deflate, compress',
+    'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:66.0) Gecko/20100101 Firefox/66.0', }

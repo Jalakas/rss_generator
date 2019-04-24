@@ -7,10 +7,20 @@
 
 import datetime
 import hashlib
-import makereq
 import time
+import lxml
 from lxml import html
 from time import mktime
+
+import rss_makereq
+import rss_print
+
+
+def domainUrl(domain, url):
+    """
+    Ühendab domeenid URLidega
+    """
+    return domain.rstrip('/') + '/' + url.lstrip('./').lstrip('/')
 
 
 def domainUrls(domain, urls):
@@ -19,8 +29,36 @@ def domainUrls(domain, urls):
     """
     domainUrls = []
     for i in range(0, len(urls)):
-        domainUrls.append(domain.rstrip('/') + '/' + urls[i].lstrip('./').lstrip('/'))
+        domainUrls.append(domainUrl(domain, urls[i]))
     return domainUrls
+
+
+def elemtreeToString(elemTree):
+    return toPlaintext(str(lxml.html.tostring(elemTree)))
+
+
+def getArticleData(articleURL, mainPage=False):
+    return rss_makereq.getArticleData(articleURL, mainPage)
+
+
+def longMonthsToNumber(rawDateTimeText):
+    rawDateTimeText = rawDateTimeText.replace('  ', ' ').strip().lower()
+    rawDateTimeText = rawDateTimeText.replace('jaanuar', '01').replace('veebruar', '02').replace('märts', '03').replace('aprill', '04').replace('mai', '05').replace('juuni', '06')
+    rawDateTimeText = rawDateTimeText.replace('juuli', '07').replace('august', '08').replace('september', '09').replace('oktoober', '10').replace('november', '11').replace('detsember', '12')
+    return rawDateTimeText
+
+
+def lstrip_string(inpString, stripString):
+    while (inpString.find(stripString) == 0):
+        inpString = inpString[len(stripString):]
+    return inpString
+
+
+def maxArticleCount(articleUrl):
+    """
+    Hashi genereerimine lehekülje URList
+    """
+    return hashlib.md5(articleUrl.encode('utf-8')).hexdigest()
 
 
 def rawToDatetime(rawDateTimeText, rawDateTimeSyntax):
@@ -30,24 +68,22 @@ def rawToDatetime(rawDateTimeText, rawDateTimeSyntax):
     rawDateTimeSyntax = selle teksti süntaks, näiteks "%d. %m %Y /"
     Süntaksi seletus: https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
     """
-    time_tuple_list = list(time.strptime(rawDateTimeText, rawDateTimeSyntax))
+
+    curDateTimeText = rawDateTimeText.strip()
+    rss_print.print_debug(__file__, "curDateTimeText = '" + curDateTimeText + "'", 4)
+
+    time_tuple_list = list(time.strptime(curDateTimeText, rawDateTimeSyntax))
     if time_tuple_list[0] == 1900:
         if time_tuple_list[1] > int(time.strftime('%m')):
-            print('parsers_common: muudame puuduva aasta eelmiseks aastaks')
+            rss_print.print_debug(__file__, "muudame puuduva aasta eelmiseks aastaks", 0)
             time_tuple_list[0] = int(time.strftime('%Y')) - 1
         else:
-            print('parsers_common: muudame puuduva aasta praeguseks aastaks')
+            rss_print.print_debug(__file__, "muudame puuduva aasta praeguseks aastaks", 0)
             time_tuple_list[0] = int(time.strftime('%Y'))
     time_tuple = tuple(time_tuple_list)
     ret = datetime.datetime.fromtimestamp(mktime(time_tuple))
+    rss_print.print_debug(__file__, "curDateTimeRet = '" + str(ret) + "'", 4)
     return ret
-
-
-def longMonthsToNumber(rawDateTimeText):
-    rawDateTimeText = rawDateTimeText.replace('  ', ' ').strip().lower()
-    rawDateTimeText = rawDateTimeText.replace('jaanuar', '01').replace('veebruar', '02').replace('märts', '03').replace('aprill', '04').replace('mai', '05').replace('juuni', '06')
-    rawDateTimeText = rawDateTimeText.replace('juuli', '07').replace('august', '08').replace('september', '09').replace('oktoober', '10').replace('november', '11').replace('detsember', '12')
-    return rawDateTimeText
 
 
 def shortMonthsToNumber(rawDateTimeText):
@@ -77,8 +113,8 @@ def stringify_children(node, pageTreeEcoding='utf-8'):
     try:
         ret = ret.decode(pageTreeEcoding)
     except Exception:
-        print("parsers_common: parandame ebaõnnestunud 'UTF-8' kodeeringu")
-        ret = makereq.fixBrokenUTF8asEncoding(ret, 'iso8859_15')
+        rss_print.print_debug(__file__, "parandame ebaõnnestunud 'UTF-8' kodeeringu")
+        ret = rss_makereq.fixBrokenUTF8asEncoding(ret, 'iso8859_15')
         ret = ret.decode(pageTreeEcoding)
     ret = toPlaintext(ret)
     return ret
@@ -89,8 +125,13 @@ def toPlaintext(rawText):
     Tagastab formaatimata teksti
     Sisend utf-8 kujul rawText
     """
-    return rawText.replace('<strong>', '<br><strong>').replace('</td>', ' </td>').replace('</p>', ' </p>').\
-        replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('    ', ' ').replace('   ', ' ').replace('  ', ' ').strip().rstrip('</').rstrip('<')
+
+    rawText = rawText.replace('<strong>', '<br><strong>').replace('</td>', '</td> ').replace('</p>', '</p> ')
+    rawText = rawText.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ')
+    rawText = " ".join(rawText.split())
+    rawText = rawText.strip().rstrip('</').rstrip('<')
+
+    return rawText
 
 
 def treeExtract(tree, xpathValue):

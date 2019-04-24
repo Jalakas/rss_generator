@@ -8,7 +8,7 @@
 import parsers_common
 
 
-def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
     """
     Meetod Tartu aarete nimekirja loomiseks
     """
@@ -19,20 +19,24 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articlePubDates = pageTree.xpath('//div[@id="t-content"]/table[1]/tr/td[1]/text()')
     articleTitles = pageTree.xpath('//div[@id="t-content"]/table[1]/tr/td[@class="left"]/b/a/text()')
     articleUrls = pageTree.xpath('//div[@id="t-content"]/table[1]/tr/td[@class="left"]/b/a/@href')
-    articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
     articleDescriptionsParents = pageTree.xpath('//div[@id="t-content"]/table[1]/tr')  # as a parent
 
-    for i in range(0, len(articleUrls)):
-        articleUrl = articleUrls[i]
+    retArticleDescriptions = []
+    retArticleIds = []
+    retArticleImages = []
+    retArticlePubDates = []
+    retArticleTitles = []
+    retArticleUrls = []
 
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
         # get unique id from articleUrl
-        articleIds.append(articleUrl.split('/')[-1])
+        articleIds.append(articleUrls[i].split('/')[-1])
 
         # description
         curArtDescParent = articleDescriptionsParents[i]
-        curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
-        articleDescriptions.append(curArtDescChilds)
+        curArtDescriptionsChilds = parsers_common.stringify_children(curArtDescParent)
+        articleDescriptions.append(curArtDescriptionsChilds)
 
         # timeformat magic from "12.12.2017" to datetime()
         curArtPubDate = articlePubDates[i]
@@ -40,17 +44,10 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         articlePubDates[i] = curArtPubDate
 
     # remove non "Tartu" ocation lines
-    retArticleDescriptions = []
-    retArticleIds = []
-    retArticleImages = []
-    retArticlePubDates = []
-    retArticleTitles = []
-    retArticleUrls = []
-    for i in range(0, len(articleUrls)):
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
         if ('Tartu' in articleDescriptions[i]):
             retArticleDescriptions.append(articleDescriptions[i])
             retArticleIds.append(articleIds[i])
-            # retArticleImages.append(articleImages[i])
             retArticlePubDates.append(articlePubDates[i])
             retArticleTitles.append(articleTitles[i])
             retArticleUrls.append(articleUrls[i])

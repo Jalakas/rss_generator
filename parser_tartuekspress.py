@@ -5,8 +5,8 @@
     Tartu Ekspressi RSS-voo sisendite parsimine
 """
 
-import makereq
 import parsers_common
+import rss_print
 
 
 def extractArticleBody(articleTree):
@@ -25,9 +25,9 @@ def extractArticleBody(articleTree):
     return ''.join(fulltext)
 
 
-def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
     """
-    Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
+    Meetod saidi kõigi uudiste nimekirja loomiseks
     """
 
     articleDescriptions = []
@@ -38,24 +38,20 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articleUrls = pageTree.xpath('//div[@class="forum"][2]/ul/li/a/@href')
     articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
-    get_article_bodies = True
-
-    for i in range(0, len(articleUrls)):
-        articleUrl = articleUrls[i]
-
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
         # get unique id from articleUrl
-        articleIds.append(articleUrl[articleUrl.index('&id=') + 4:articleUrl.index('&', articleUrl.index('&id=') + 4)])
+        articleIds.append(articleUrls[i].split("&")[-1].split("=")[-1])
 
-        if (get_article_bodies is True and i < maxPageURLstoVisit):
+        if (getArticleBodies is True):
             # load article into tree
-            articleTree = makereq.getArticleData(articleUrl)
-            articleTreeBuf = makereq.getArticleData(articleUrl)
+            articleTree = parsers_common.getArticleData(articleUrls[i])
+            articleTreeBuf = parsers_common.getArticleData(articleUrls[i])
 
             # description
             curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]')   # as a parent
-            curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
-            curArtDescChilds = curArtDescChilds.split('<a name="fb_share">')[0]
-            articleDescriptions.append(curArtDescChilds)
+            curArtDescriptionsChilds = parsers_common.stringify_children(curArtDescParent)
+            curArtDescriptionsChilds = curArtDescriptionsChilds.split('<a name="fb_share">')[0]
+            articleDescriptions.append(curArtDescriptionsChilds)
 
             # it's not possible to make two similar search on same dataset
             articleTree = articleTreeBuf
@@ -70,10 +66,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
                 curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d/%m/%Y %H:%M:%S")
                 articlePubDates.append(curArtPubDate)
             except Exception:
-                print("tartuekspress: kellaaja hankimine ebaõnnestus! Liiga palju <P> elemente?")
-
-    # korrastame pildilingid
-    articleImages = parsers_common.domainUrls(domain, articleImages)
+                rss_print.print_debug("tartuekspress: kellaaja hankimine ebaõnnestus! Liiga palju <P> elemente?")
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,

@@ -1,6 +1,9 @@
 *.pyc
-*rss
+*.rss
 .directory
+archive/
 article_cache/
 latest_feeds/
 older_feeds/
+serverside/
+rss_config.py

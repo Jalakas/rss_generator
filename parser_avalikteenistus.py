@@ -6,34 +6,31 @@
 """
 
 import parsers_common
+import rss_print
 
 
-def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
     """
     Meetod saidi pakkumiste nimekirja loomiseks
     """
 
     articleDescriptions = []
     articleIds = []
-    # articleImages = []
-    # articlePubDates = []
     articleTitles = pageTree.xpath('//table[@class="views-table cols-5"]/tbody/tr/td[1]/text()')
     articleUrls = pageTree.xpath('//table[@class="views-table cols-5"]/tbody/tr/td[5]/div[1]/a/@href')
 
     articleDescName = pageTree.xpath('//table[@class="views-table cols-5"]/tbody/tr/td[2]/div[1]/text()')
     articleDescLoc = pageTree.xpath('//table[@class="views-table cols-5"]/tbody/tr/td[4]/div[1]/text()')
 
-    for i in range(0, len(articleUrls)):
-        articleUrl = articleUrls[i]
-
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
         # get unique id from articleUrl
-        articleIds.append(articleUrl.split('/')[-1])
+        articleIds.append(articleUrls[i].split('/')[-1])
 
         # description
         try:
             articleDescriptions.append(parsers_common.toPlaintext(articleDescName[i]) + "<br>" + parsers_common.toPlaintext(articleDescLoc[i]))
         except Exception:
-            print("parser_avalikteenistus.py: leht on tuksis, lisame tühja kirjelduse")
+            rss_print.print_debug(__file__, "leht on tuksis, lisame tühja kirjelduse")
             articleDescriptions.append(" ")
 
         # title
@@ -47,7 +44,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     retArticleTitles = []
     retArticleUrls = []
 
-    for i in range(0, len(articleUrls)):
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
         if ('Tartu' in articleDescriptions[i]):
             retArticleDescriptions.append(articleDescriptions[i])
             retArticleIds.append(articleIds[i])

@@ -10,6 +10,9 @@ import time
 from email import utils
 from lxml import etree
 
+import rss_print
+import parsers_common
+
 
 def rssmaker(dataset, title_text, domain_text, link_text, description_text):
     root = etree.Element("rss", version="2.0")
@@ -35,7 +38,7 @@ def rssmaker(dataset, title_text, domain_text, link_text, description_text):
     ttl.text = str(120)
 
     if (len(dataset['articleIds']) < 1):
-        print("rssmaker: ei leitud ühtegi ID väärtust lingilt: " + str(link_text))
+        rss_print.print_debug(__file__, "ei leitud ühtegi ID väärtust lingilt: " + str(link_text))
 
     for i in range(0, len(dataset['articleIds'])):
         item = etree.SubElement(channel, "item")
@@ -47,25 +50,35 @@ def rssmaker(dataset, title_text, domain_text, link_text, description_text):
 
         if ('articleUrls' in dataset and i < len(list(dataset['articleUrls'])) and list(dataset['articleUrls'])[i] is not None):
             item_link = etree.SubElement(item, "link")
-            item_link.text = list(dataset['articleUrls'])[i].encode('ascii', 'xmlcharrefreplace')
+            cur_value = list(dataset['articleUrls'])[i]
+            if (cur_value.find('http', 0, 4) == -1):
+                rss_print.print_debug(__file__, "lingist ei leitud http-d: " + str(cur_value), 2)
+                cur_value = parsers_common.domainUrl(domain_text, cur_value)
+            item_link.text = cur_value.encode('ascii', 'xmlcharrefreplace')
         else:
-            print(("rssmaker: järgneval ID-l puudus aadress: " + str(item_guid.text)))
+            rss_print.print_debug(__file__, "järgneval ID-l puudus aadress: " + str(item_guid.text))
             item_link = etree.SubElement(item, "link")
             item_link.text = link.text
 
         if ('articleTitles' in dataset and i < len(list(dataset['articleTitles'])) and list(dataset['articleTitles'])[i] is not None):
             item_title = etree.SubElement(item, "title")
-            item_title.text = list(dataset['articleTitles'])[i].encode('ascii', 'xmlcharrefreplace').strip()
+            cur_value = list(dataset['articleTitles'])[i]
+            cur_value = cur_value.replace("<br>", " ")
+            item_title.text = cur_value.encode('ascii', 'xmlcharrefreplace').strip()
         else:
-            print(("rssmaker: järgneval aadressil puudus vajalik pealkiri: " + str(item_link.text)))
+            rss_print.print_debug(__file__, "järgneval aadressil puudus vajalik pealkiri: " + str(item_link.text))
             item_title = etree.SubElement(item, "title")
             item_title.text = title.text + " " + item_guid.text
 
         if ('articleDescriptions' in dataset and i < len(list(dataset['articleDescriptions'])) and list(dataset['articleDescriptions'])[i] is not None):
             item_description = etree.SubElement(item, "description")
-            item_description.text = list(dataset['articleDescriptions'])[i].encode('ascii', 'xmlcharrefreplace')
+            cur_value = list(dataset['articleDescriptions'])[i]
+            cur_value = cur_value.strip()
+            cur_value = parsers_common.lstrip_string(cur_value, "<br>")
+            cur_value = parsers_common.lstrip_string(cur_value, "<br/>")
+            item_description.text = cur_value.encode('ascii', 'xmlcharrefreplace').strip()
         else:
-            print(("rssmaker: järgneval pealkirjal puudus vajalik kirjeldus: " + str(item_title.text)))
+            rss_print.print_debug(__file__, "järgneval pealkirjal puudus vajalik kirjeldus: " + str(item_title.text))
             item_description = etree.SubElement(item, "description")
             item_description.text = item_title.text
 
@@ -82,11 +95,14 @@ def rssmaker(dataset, title_text, domain_text, link_text, description_text):
         if ('articleImages' in dataset and i < len(list(dataset['articleImages'])) and list(dataset['articleImages'])[i] is not None):
             # https://cyber.harvard.edu/rss/rss.html
             # <enclosure url="http://www.scripting.com/mp3s/weatherReportSuite.mp3" length="12216320" type="audio/mpeg" />
-            curImgLink = list(dataset['articleImages'])[i]
-            if len(curImgLink) < len(domain_text + "1.jpg"):
-                print(("rssmaker: ei lisa RSS-i pildilinki, kuna see on liiga lühike: " + str(curImgLink)))
+            cur_value = list(dataset['articleImages'])[i]
+            if len(cur_value) < len(domain_text + "1.jpg"):
+                rss_print.print_debug(__file__, "ei lisa RSS-i pildilinki, kuna see on liiga lühike: " + str(cur_value))
             else:
-                item_enc_url = str(curImgLink).encode('ascii', 'xmlcharrefreplace')
+                if (cur_value.find('http', 0, 4) == -1):
+                    rss_print.print_debug(__file__, "pildi lingist ei leitud http-d: " + str(cur_value), 2)
+                    cur_value = parsers_common.domainUrl(domain_text, cur_value)
+                item_enc_url = str(cur_value).encode('ascii', 'xmlcharrefreplace')
                 if b'.jpg' in (item_enc_url):
                     item_enc_type = "image/jpeg"
                 elif b'.png' in (item_enc_url):

@@ -8,7 +8,7 @@
 import parsers_common
 
 
-def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
     """
     Meetod HV uudiste nimekirja loomiseks
     """
@@ -20,11 +20,9 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articleTitles = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/div/h3/text()')
     articleUrls = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/@href')
 
-    for i in range(0, len(articleUrls)):
-        articleUrl = articleUrls[i]
-
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
         # get unique id from articleUrl
-        articleIds.append(articleUrl.split('?t=')[-1])
+        articleIds.append(articleUrls[i].split('?t=')[-1])
 
         # description
         articleDescriptions[i] = parsers_common.toPlaintext(articleDescriptions[i])

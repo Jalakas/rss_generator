@@ -5,11 +5,10 @@
     Rahvusarhiivi RSS-voo sisendite parsimine
 """
 
-import makereq
 import parsers_common
 
 
-def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
     """
     Meetod kõigi uudiste nimekirja loomiseks
     """
@@ -21,27 +20,23 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articleTitles = pageTree.xpath('//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/text()')
     articleUrls = pageTree.xpath('//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/@href')
 
-    get_article_bodies = True
-
-    for i in range(0, len(articleUrls)):
-        articleUrl = articleUrls[i]
-
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
         # get unique id from articleUrl
-        articleIds.append(articleUrl.split('-')[-1])
+        articleIds.append(articleUrls[i].split('-')[-1])
 
         # timeformat magic from "03.01" to datetime()
         curArtPubDate = articlePubDates[i].strip()
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m")
         articlePubDates[i] = curArtPubDate
 
-        if (get_article_bodies is True and i < maxPageURLstoVisit):
+        if (getArticleBodies is True):
             # load article into tree
-            articleTree = makereq.getArticleData(articleUrl)
+            articleTree = parsers_common.getArticleData(articleUrls[i])
 
             # description
             curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@class="b-article"]')  # as a parent
-            curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
-            articleDescriptions.append(curArtDescChilds)
+            curArtDescriptionsChilds = parsers_common.stringify_children(curArtDescParent)
+            articleDescriptions.append(curArtDescriptionsChilds)
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,

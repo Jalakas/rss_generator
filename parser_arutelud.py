@@ -6,9 +6,10 @@
 """
 
 import parsers_common
+import rss_print
 
 
-def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
     """
     Meetod foorumi kõigi postituste nimekirja loomiseks
     """
@@ -19,19 +20,16 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articlePubDates = pageTree.xpath('//div/div[@class="inner"]/div[@class="postbody"]/p/text()[2]')
     articleTitles = pageTree.xpath('//div/div[@class="inner"]/div[@class="postbody"]/p[@class="author"]/strong//text()')
     articleUrls = pageTree.xpath('//div/div[@class="inner"]/div[@class="postbody"]/p[@class="author"]/a/@href')
-    articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
     articleDescriptionsParents = pageTree.xpath('//div/div[@class="inner"]/div[@class="postbody"]/div[@class="content"]')  # as a parent
 
-    for i in range(0, len(articleUrls)):
-        articleUrl = articleUrls[i]
-
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
         # get unique id from articleUrl
-        articleIds.append(articleUrl.split('#p')[-1])
+        articleIds.append(articleUrls[i].split('#p')[-1])
 
         # description
-        curArtDescChilds = parsers_common.stringify_children(articleDescriptionsParents[i])
-        articleDescriptions.append(curArtDescChilds)
+        curArtDescriptionsChilds = parsers_common.stringify_children(articleDescriptionsParents[i])
+        articleDescriptions.append(curArtDescriptionsChilds)
 
         # title
         articleTitles[i] = articleTitles[i] + " @" + domain
@@ -43,7 +41,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
         articlePubDates[i] = curArtPubDate
 
         if (articleDescriptions[i].find("jumal") > 0 or articleDescriptions[i].find("Jumal") > 0):
-            print('Eemaldame jumalat sisaldava kande')
+            rss_print.print_debug(__file__, "Eemaldame jumalat sisaldava kande")
             i = i - 1
 
     return {"articleDescriptions": articleDescriptions,

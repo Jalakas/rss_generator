@@ -2,15 +2,16 @@
 # -*- coding: utf-8 -*-
 
 """
-    Nõmmeraadio RSS-voo sisendite parsimine
+    RSS-voo sisendite parsimine
 """
 
 import parsers_common
+import rss_print
 
 
-def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
     """
-    Meetod uudistesaidi kõigi uudiste nimekirja loomiseks
+    Meetod saidi kõigi uudiste nimekirja loomiseks
     """
 
     articleDescriptions = []
@@ -22,11 +23,9 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
 
     articleDescriptionsParents = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_bottom"]/div[@class="audioitem_item_desc"]')  # as a parent
 
-    for i in range(0, len(articleUrls)):
-        articleUrl = articleUrls[i]
-
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
         # generate unique id from articleUrl
-        articleIds.append(parsers_common.urlToHash(articleUrl))
+        articleIds.append(parsers_common.urlToHash(articleUrls[i]))
 
         # description
         curArtDesc = articleDescriptionsParents[i]
@@ -41,7 +40,7 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
             curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y")
             articlePubDates[i] = curArtPubDate
         except Exception:
-            print('parser_nommeraadio: toores aeg puudub või on vigane')
+            rss_print.print_debug(__file__, "toores aeg puudub või on vigane")
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,

@@ -5,9 +5,12 @@
     HTML-i hankimine
 """
 
-import requests
 from lxml import html
 import os
+import requests
+
+import rss_config
+import rss_print
 
 
 def getArticleData(articleURL, mainPage=False):
@@ -25,15 +28,19 @@ def getArticleData(articleURL, mainPage=False):
 
     if mainPage is True:
         # põhilehekülg tuleb alati alla laadida Internetist
+        rss_print.print_debug(__file__, "teeme internetipäringu lehele: " + articleURL)
         htmlPageString = makeReq(articleURL)
     else:
         try:
             # proovime kõigepealt hankida kettalt
             with open(osCacheFolderDomainArticle, 'rb') as cacheReadFile:
-                # print("makereg: proovime kettalt lugeda " + osCacheFolderDomainArticle)
                 htmlPageString = cacheReadFile.read()
+                rss_print.print_debug(__file__, "lugesime kettalt: " + osCacheFolderDomainArticle, 2)
         except Exception:
+            rss_print.print_debug(__file__, "ei õnnestunud kettalt lugeda: " + osCacheFolderDomainArticle)
+
             # kui kettalt ei leidnud, hangime veebist
+            rss_print.print_debug(__file__, "teeme internetipäringu lehele: " + articleURL)
             htmlPageString = makeReq(articleURL)
 
             # ja salvestame alati kettale
@@ -48,7 +55,7 @@ def getArticleData(articleURL, mainPage=False):
     try:
         htmlPageString.decode("utf-8")
     except Exception:
-        print("makereg: parandame ebaõnnestunud 'UTF-8' as 'iso8859_15' kodeeringu veebilehel: " + articleURL)
+        rss_print.print_debug("makereg: parandame ebaõnnestunud 'UTF-8' as 'iso8859_15' kodeeringu veebilehel: " + articleURL)
         htmlPageString = fixBrokenUTF8asEncoding(htmlPageString, 'iso8859_15')
 
     # eemaldame ::before, sest see teeb tõenäoliselt XML extractori katki
@@ -73,10 +80,10 @@ def fixBrokenUTF8asEncoding(brokenBytearray, encoding='iso8859_15'):  # 'iso8859
         try:
             byteUTF8inEncode = byteUnicode.encode('utf-8').decode(encoding)
         except Exception:
-            # print("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: pole sümbolit")
+            # rss_print.print_debug("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: pole sümbolit")
             continue
 
-        # print("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: " + str(byteUTF8inEncode))
+        # rss_print.print_debug("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: " + str(byteUTF8inEncode))
         curBytearray = curBytearray.replace(byteUTF8inEncode, byteUnicode)
     curBytearray = curBytearray.replace('â', '"')
     curBytearray = curBytearray.replace('â', '"')
@@ -91,11 +98,7 @@ def makeReq(link):
     Päringu teostamine HTML-i allalaadimiseks
     """
 
-    headers = {
-        'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0',
-        'Accept-Encoding': 'gzip, deflate, compress'}
     session = requests.session()
 
-    print('makereg: teeme internetipäringu lehele: ' + link)
-    req = session.get(link, headers=headers)
+    req = session.get(link, headers=rss_config.headers)
     return req.content

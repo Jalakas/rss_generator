@@ -6,78 +6,79 @@
 """
 
 from datetime import datetime, timedelta
-import makereq
 import parsers_common
+import rss_print
 
 
-def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
     """
     Meetod foorumi kõigi postituste nimekirja loomiseks
     """
 
-    domain = 'https://fp.lhv.ee'
+    maxArticleCount = 8
+    articlePostsCount = round(100 / maxArticleCount)  # set 0 for all posts
 
-    # articleDescriptions = []
-    # articleIds = []
-    # articleImages = []
-    # articlePubDates = pageTree.xpath('//table[@class="grid zebra forum"]//tr/td[@class="meta"][3]/text()')
     articleTitles = pageTree.xpath('//table[@class="grid zebra forum"]//tr/td[@class="title"]/a/@title')
     articleUrls = pageTree.xpath('//table[@class="grid zebra forum"]//tr/td[@class="title"]/a/@href')
     articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
-    get_article_bodies = True
-    maxPageURLstoVisit = 1
+    articlePostsDescriptions = []
+    articlePostsIds = []
+    articlePostsImages = []
+    articlePostsPubDates = []
+    articlePostsTitles = []
+    articlePostsUrls = []
 
     # teemade läbivaatamine
-    for i in range(0, len(articleUrls)):
-        articleUrl = articleUrls[i] + '?pagesOfMaxSize=true'
-        articleTitle = articleTitles[i]
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
+        if (articleUrls[i] == "https://fp.lhv.ee/forum/free/121915"):  # Kalev Jaik võsafilosoofist majandusteadlane
+            rss_print.print_debug(__file__, 'jätame Jaiki filosoofia vahele', 0)
+            i += 1
 
-        # teemalehe hankimine
-        if (get_article_bodies is True and i < maxPageURLstoVisit):
-            # load article into tree
-            articlePostTree = makereq.getArticleData(articleUrl)
+        # teemalehe sisu hankimine
+        if (getArticleBodies is True):
+            articlePostsTree = parsers_common.getArticleData(articleUrls[i] + '?listEventId=jumpToPage&listEventParam=100&pagesOfMaxSize=true', True)  # True teeb alati päringu
 
-            articlePostDescriptions = []
-            articlePostIds = articlePostTree.xpath('//ul/li/div[@class="col2"]//p[@class="permalink"]/a/@href')
-            articlePostImages = []
-            articlePostPubDates = articlePostTree.xpath('//ul/li/div[@class="col2"]//p[@class="permalink"]/a/text()')
-            articlePostTitles = []
-            articlePostUrls = []
+            articlePostsIdsRaw = articlePostsTree.xpath(
+                '//ul/li/div[@class="col2"]/div/div/p[@class="permalink"]/a/@href')
+            articlePostsPubDatesRaw = articlePostsTree.xpath(
+                '//ul/li/div[@class="col2"]/div/div/p[@class="permalink"]/a/text()')
+            articlePostsDescriptionsParents = articlePostsTree.xpath(
+                '//ul/li/div[@class="col2"]/div[@class="forum-content temporary-class"]')
 
-            articlePostDescriptionsParents = articlePostTree.xpath('//ul/li/div[@class="col2"]/div[@class="forum-content temporary-class"]')
+            rss_print.print_debug(__file__, 'xpath parsimisel ' + str(len(articlePostsIdsRaw)) + " leid(u)", 1)
 
-            # postide läbivaatamine
-            for j in range(0, len(articlePostIds)):
+            # postituste läbivaatamine
+            for j in range(max(0, len(articlePostsIdsRaw) - articlePostsCount), len(articlePostsIdsRaw)):
+                rss_print.print_debug(__file__, 'teema postitus nr. ' + str(j + 1) + "/(" + str(len(articlePostsIdsRaw)) + ") on " + articlePostsIdsRaw[j], 2)
 
-                # generate articlePostUrls from articlePostId
-                articlePostUrls.append(articleUrl + articlePostIds[j])
+                # generate articlePostsUrls from articlePostsId
+                articlePostsUrls.append(articleUrls[i] + articlePostsIdsRaw[j])
 
                 # pärast lingi koostamist lühendame id koodi
-                articlePostIds[j] = articlePostIds[j].split("=")[-1]
+                articlePostsIds.append(articlePostsIdsRaw[j].split("=")[-1])
 
                 # description
-                curArtDescChilds = parsers_common.stringify_children(articlePostDescriptionsParents[j])
-                articlePostDescriptions.append(curArtDescChilds)
+                curArtDescriptionsChilds = parsers_common.stringify_children(articlePostsDescriptionsParents[j])
+                articlePostsDescriptions.append(curArtDescriptionsChilds)
 
                 # title
-                articlePostTitles.append(articleTitle + " @" + domain)
+                articlePostsTitles.append(articleTitles[i] + " @" + domain)
 
-                yesterday = datetime.now() - timedelta(days=1)
                 # timeformat magic from "15.01.2012 23:49" to datetime()
-                curArtPubDate = articlePostPubDates[j]
+                curArtPubDate = articlePostsPubDatesRaw[j]
                 curArtPubDate = curArtPubDate.strip()
-                curArtPubDate = curArtPubDate.replace('Eile', yesterday.strftime('%d.%m.%Y'))
-                if len(curArtPubDate) > 5:
-                    curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y %H:%M")
-                else:
-                    curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%H:%M")
-                articlePostPubDates[j] = curArtPubDate
+                curArtPubDate = curArtPubDate.replace('Eile', (datetime.now() - timedelta(days=1)).strftime('%d.%m.%Y'))
+                if len(curArtPubDate) < len("%d.%m.%Y %H:%M"):
+                    curArtPubDate = datetime.now().strftime('%d.%m.%Y') + ' ' + curArtPubDate
+                    rss_print.print_debug(__file__, "lisasime tänasele kellaajale kuupäeva: " + curArtPubDate, 3)
+                curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y %H:%M")
+                articlePostsPubDates.append(curArtPubDate)
 
-    return {"articleDescriptions": articlePostDescriptions,
-            "articleIds": articlePostIds,
-            "articleImages": articlePostImages,
-            "articlePubDates": articlePostPubDates,
-            "articleTitles": articlePostTitles,
-            "articleUrls": articlePostUrls,
+    return {"articleDescriptions": articlePostsDescriptions,
+            "articleIds": articlePostsIds,
+            "articleImages": articlePostsImages,
+            "articlePubDates": articlePostsPubDates,
+            "articleTitles": articlePostsTitles,
+            "articleUrls": articlePostsUrls,
            }

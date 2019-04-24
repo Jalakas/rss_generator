@@ -8,7 +8,7 @@
 import parsers_common
 
 
-def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
+def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
     """
     Meetod kõigi pakkumiste nimekirja loomiseks
     """
@@ -19,24 +19,21 @@ def getArticleListsFromHtml(pageTree, domain, maxPageURLstoVisit):
     articlePubDates = []
     articleTitles = pageTree.xpath('//div[@class="product_camp_box   w"]/a/div/div[@class="leftC"]/h3/text()')
     articleUrls = pageTree.xpath('//div[@class="product_camp_box   w"]/a/@href')
-    articleUrls = parsers_common.domainUrls(domain, articleUrls)
 
     articleDescriptionsParents = pageTree.xpath('//div[@class="product_camp_box   w"]/a/div/div[@class="leftC"]')  # as a parent
     articlePriceParents = pageTree.xpath('//div[@class="product_camp_box   w"]/div[@class="priceCont"]')  # as a parent
 
-    for i in range(0, len(articleUrls)):
-        articleUrl = articleUrls[i]
-
+    for i in range(0, min(len(articleUrls), maxArticleCount)):
         # get unique id from articleUrl
-        articleIds.append(articleUrl.split('/')[-1].lstrip('-'))
+        articleIds.append(articleUrls[i].split('/')[-1].lstrip('-'))
 
         # description
         curArtDescParent = articleDescriptionsParents[i]
-        curArtDescChilds = parsers_common.stringify_children(curArtDescParent)
+        curArtDescriptionsChilds = parsers_common.stringify_children(curArtDescParent)
         curArtPriceParent = articlePriceParents[i]
         curArtPriceChilds = parsers_common.stringify_children(curArtPriceParent)
 
-        articleDescriptions.append(curArtDescChilds + "<br>" + curArtPriceChilds)
+        articleDescriptions.append(curArtDescriptionsChilds + "<br>" + curArtPriceChilds)
 
     return {"articleDescriptions": articleDescriptions,
             "articleIds": articleIds,
