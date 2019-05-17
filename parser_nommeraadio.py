@@ -15,21 +15,16 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
     """
 
     articleDescriptions = []
-    articleIds = []
-    articleImages = []
-    articlePubDates = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
-    articleTitles = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
-    articleUrls = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/a/@href')
+    articleImages = parsers_common.xpath(pageTree, '//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/a/@href')
+    articlePubDates = parsers_common.xpath(pageTree, '//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
+    articleTitles = parsers_common.xpath(pageTree, '//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/div[@class="audiolist_item_label"]/text()')
+    articleUrls = parsers_common.xpath(pageTree, '//div[@class="audiolist_item"]/div[@class="audiolist_item_header"]/a/@href')
 
-    articleDescriptionsParents = pageTree.xpath('//div[@class="audiolist_item"]/div[@class="audiolist_item_bottom"]/div[@class="audioitem_item_desc"]')  # as a parent
+    articleDescriptionsParents = parsers_common.xpath(pageTree, '//div[@class="audiolist_item"]/div[@class="audiolist_item_bottom"]/div[@class="audioitem_item_desc"]')  # as a parent
 
     for i in range(0, min(len(articleUrls), maxArticleCount)):
-        # generate unique id from articleUrl
-        articleIds.append(parsers_common.urlToHash(articleUrls[i]))
-
         # description
-        curArtDesc = articleDescriptionsParents[i]
-        curArtDesc = parsers_common.stringify_children(curArtDesc)
+        curArtDesc = parsers_common.stringify_children(articleDescriptionsParents[i])
         articleDescriptions.append(curArtDesc)
 
         try:
@@ -43,7 +38,6 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
             rss_print.print_debug(__file__, "toores aeg puudub või on vigane")
 
     return {"articleDescriptions": articleDescriptions,
-            "articleIds": articleIds,
             "articleImages": articleImages,
             "articlePubDates": articlePubDates,
             "articleTitles": articleTitles,

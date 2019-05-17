@@ -30,28 +30,27 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
     Meetod saidi kõigi uudiste nimekirja loomiseks
     """
 
+    articleAuthors = []
     articleDescriptions = []
-    articleIds = []
     articleImages = []
     articlePubDates = []
-    articleTitles = pageTree.xpath('//div[@class="forum"][2]/ul/li/a/text()')
-    articleUrls = pageTree.xpath('//div[@class="forum"][2]/ul/li/a/@href')
-    articleUrls = parsers_common.domainUrls(domain, articleUrls)
+    articleTitles = parsers_common.xpath(pageTree, '//div[@class="forum"][2]/ul/li/a/text()')
+    articleUrls = parsers_common.xpath(pageTree, '//div[@class="forum"][2]/ul/li/a/@href')
 
     for i in range(0, min(len(articleUrls), maxArticleCount)):
-        # get unique id from articleUrl
-        articleIds.append(articleUrls[i].split("&")[-1].split("=")[-1])
-
         if (getArticleBodies is True):
             # load article into tree
-            articleTree = parsers_common.getArticleData(articleUrls[i])
-            articleTreeBuf = parsers_common.getArticleData(articleUrls[i])
+            articleTree = parsers_common.getArticleData(domain, articleUrls[i], False)
+            articleTreeBuf = parsers_common.getArticleData(domain, articleUrls[i], False)
 
             # description
             curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@id="content"]/div[@class="full_width"]')   # as a parent
             curArtDescriptionsChilds = parsers_common.stringify_children(curArtDescParent)
             curArtDescriptionsChilds = curArtDescriptionsChilds.split('<a name="fb_share">')[0]
             articleDescriptions.append(curArtDescriptionsChilds)
+
+            # author
+            articleAuthors.append(curArtDescriptionsChilds.split('Autor:')[1].split('</b>')[0].split('<b>')[1])
 
             # it's not possible to make two similar search on same dataset
             articleTree = articleTreeBuf
@@ -66,10 +65,10 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
                 curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d/%m/%Y %H:%M:%S")
                 articlePubDates.append(curArtPubDate)
             except Exception:
-                rss_print.print_debug("tartuekspress: kellaaja hankimine ebaõnnestus! Liiga palju <P> elemente?")
+                rss_print.print_debug(__file__, "kellaaja hankimine ebaõnnestus! Liiga palju <p> elemente?")
 
-    return {"articleDescriptions": articleDescriptions,
-            "articleIds": articleIds,
+    return {"articleAuthors": articleAuthors,
+            "articleDescriptions": articleDescriptions,
             "articleImages": articleImages,
             "articlePubDates": articlePubDates,
             "articleTitles": articleTitles,

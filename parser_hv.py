@@ -13,17 +13,13 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
     Meetod HV uudiste nimekirja loomiseks
     """
 
-    articleDescriptions = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/div/p/text()')
-    articleIds = []
-    articleImages = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/p/img/@src')
-    articlePubDates = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/@title')
-    articleTitles = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/div/h3/text()')
-    articleUrls = pageTree.xpath('//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/@href')
+    articleDescriptions = parsers_common.xpath(pageTree, '//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/div/p/text()')
+    articleImages = parsers_common.xpath(pageTree, '//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/p/img/@src')
+    articlePubDates = parsers_common.xpath(pageTree, '//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/@title')
+    articleTitles = parsers_common.xpath(pageTree, '//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/div/h3/text()')
+    articleUrls = parsers_common.xpath(pageTree, '//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/@href')
 
     for i in range(0, min(len(articleUrls), maxArticleCount)):
-        # get unique id from articleUrl
-        articleIds.append(articleUrls[i].split('?t=')[-1])
-
         # description
         articleDescriptions[i] = parsers_common.toPlaintext(articleDescriptions[i])
 
@@ -33,7 +29,6 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
         articlePubDates[i] = curArtPubDate
 
     return {"articleDescriptions": articleDescriptions,
-            "articleIds": articleIds,
             "articleImages": articleImages,
             "articlePubDates": articlePubDates,
             "articleTitles": articleTitles,

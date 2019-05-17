@@ -14,16 +14,12 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
     """
 
     articleDescriptions = []
-    articleIds = []
     articleImages = []
-    articlePubDates = pageTree.xpath('//li[@class="b-posts__list-item"]/p[@class="b-posts__list-item-summary"]/text()')
-    articleTitles = pageTree.xpath('//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/text()')
-    articleUrls = pageTree.xpath('//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/@href')
+    articlePubDates = parsers_common.xpath(pageTree, '//li[@class="b-posts__list-item"]/p[@class="b-posts__list-item-summary"]/text()')
+    articleTitles = parsers_common.xpath(pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/text()')
+    articleUrls = parsers_common.xpath(pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/@href')
 
     for i in range(0, min(len(articleUrls), maxArticleCount)):
-        # get unique id from articleUrl
-        articleIds.append(articleUrls[i].split('-')[-1])
-
         # timeformat magic from "03.01" to datetime()
         curArtPubDate = articlePubDates[i].strip()
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m")
@@ -31,7 +27,7 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
 
         if (getArticleBodies is True):
             # load article into tree
-            articleTree = parsers_common.getArticleData(articleUrls[i])
+            articleTree = parsers_common.getArticleData(domain, articleUrls[i], False)
 
             # description
             curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@class="b-article"]')  # as a parent
@@ -39,7 +35,6 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
             articleDescriptions.append(curArtDescriptionsChilds)
 
     return {"articleDescriptions": articleDescriptions,
-            "articleIds": articleIds,
             "articleImages": articleImages,
             "articlePubDates": articlePubDates,
             "articleTitles": articleTitles,

@@ -14,24 +14,19 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
     """
 
     articleDescriptions = []
-    articleIds = []
-    articleImages = pageTree.xpath('//div[@class="product"]//div[@class="table-cell image-cell"]/img/@src')
+    articleImages = parsers_common.xpath(pageTree, '//div[@class="product"]//div[@class="table-cell image-cell"]/img/@src')
     articlePubDates = []
-    articleTitles = pageTree.xpath('//div[@class="product"]//div[@class="table-cell description-cell"]/h2/text()')
-    articleUrls = pageTree.xpath('//div[@class="product"]//div[@class="table-cell description-cell"]/a/@href')
+    articleTitles = parsers_common.xpath(pageTree, '//div[@class="product"]//div[@class="table-cell description-cell"]/h2/text()')
+    articleUrls = parsers_common.xpath(pageTree, '//div[@class="product"]//div[@class="table-cell description-cell"]/a/@href')
 
-    articleDescriptionsParents = pageTree.xpath('//div[@class="product"]//div[@class="table-cell description-cell"]')  # as a parent
+    articleDescriptionsParents = parsers_common.xpath(pageTree, '//div[@class="product"]//div[@class="table-cell description-cell"]')  # as a parent
 
     for i in range(0, min(len(articleUrls), maxArticleCount)):
-        # get unique id from articleUrl
-        articleIds.append(articleUrls[i].split('/')[-1])
-
         # description
         curArtDescriptionsChilds = parsers_common.stringify_children(articleDescriptionsParents[i])
         articleDescriptions.append(curArtDescriptionsChilds)
 
     return {"articleDescriptions": articleDescriptions,
-            "articleIds": articleIds,
             "articleImages": articleImages,
             "articlePubDates": articlePubDates,
             "articleTitles": articleTitles,

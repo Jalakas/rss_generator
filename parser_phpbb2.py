@@ -5,7 +5,6 @@
     RSS-voo sisendite parsimine
 """
 
-from datetime import datetime, timedelta
 import parsers_common
 import rss_print
 
@@ -18,8 +17,8 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
     maxArticleCount = 15
     articlePostsCount = round(150 / maxArticleCount)  # set 0 for all posts
 
-    articleTitles = parsers_common.xpath(pageTree, '//table[@class="grid zebra forum"]//tr/td[@class="title"]/a/@title')
-    articleUrls = parsers_common.xpath(pageTree, '//table[@class="grid zebra forum"]//tr/td[@class="title"]/a/@href')
+    articleTitles = parsers_common.xpath(pageTree, '//tr[@valign="middle"]/td[3]/a/text()')
+    articleUrls = parsers_common.xpath(pageTree, '//tr[@valign="middle"]/td[3]/a/@href')
 
     articlePostsAuthors = []
     articlePostsDescriptions = []
@@ -30,18 +29,16 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
 
     # teemade läbivaatamine
     for i in range(0, min(len(articleUrls), maxArticleCount)):
-        if (articleUrls[i] == "/forum/free/121915"):  # Kalev Jaik võsafilosoofist majandusteadlane
-            rss_print.print_debug(__file__, 'jätame Jaiki filosoofia vahele', 0)
-            i += 1
 
         # teemalehe sisu hankimine
         if (getArticleBodies is True):
-            articlePostsTree = parsers_common.getArticleData(domain, articleUrls[i] + '?listEventId=jumpToPage&listEventParam=100&pagesOfMaxSize=true', True)  # True teeb alati päringu
+            articleUrls[i] = articleUrls[i].split("&sid=")[0]
+            articlePostsTree = parsers_common.getArticleData(domain, articleUrls[i] + "&start=20000", True)  # True teeb alati päringu
 
-            articleLoopAuthors = parsers_common.xpath(articlePostsTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/p[@class="author"]/strong/a/text()')
-            articleLoopIds = parsers_common.xpath(articlePostsTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/div/p[@class="permalink"]/a/@href')
-            articleLoopPubDates = parsers_common.xpath(articlePostsTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/div/p[@class="permalink"]/a/text()')
-            articleLoopDescriptionsParents = parsers_common.xpath(articlePostsTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-content temporary-class"]')
+            articleLoopAuthors = parsers_common.xpath_devel(articlePostsTree, '//tr/td/b[@class="postauthor"]/text()')
+            articleLoopIds = parsers_common.xpath_devel(articlePostsTree, '//tr/td[@class="gensmall"]/div[2]/a/@href')
+            articleLoopPubDates = parsers_common.xpath_devel(articlePostsTree, '//tr/td[@class="gensmall"]/div[2]/text()')
+            articleLoopDescriptionsParents = parsers_common.xpath_devel(articlePostsTree, '//tr/td/div[@class="postbody"][1]')  # as a parent
 
             rss_print.print_debug(__file__, 'xpath parsimisel ' + str(len(articleLoopIds)) + " leid(u)", 1)
 
@@ -50,7 +47,7 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
                 rss_print.print_debug(__file__, 'teema postitus nr. ' + str(j + 1) + "/(" + str(len(articleLoopIds)) + ") on " + articleLoopIds[j], 2)
 
                 # generate articlePostsUrls from articlePostsIds
-                articlePostsUrls.append(articleUrls[i] + articleLoopIds[j])
+                articlePostsUrls.append(articleLoopIds[j].split("&sid=")[0] + "#" + articleLoopIds[j].split("#")[1])
 
                 # author
                 articlePostsAuthors.append(articleLoopAuthors[j])
@@ -60,14 +57,11 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
                 curArtDescriptionsChilds = parsers_common.fixDrunkPost(curArtDescriptionsChilds)
                 articlePostsDescriptions.append(curArtDescriptionsChilds)
 
-                # timeformat magic from "15.01.2012 23:49" to datetime()
+                # timeformat magic from "03 mär, 2019 16:26" to datetime()
                 curArtPubDate = articleLoopPubDates[j]
                 curArtPubDate = curArtPubDate.strip()
-                curArtPubDate = curArtPubDate.replace('Eile', (datetime.now() - timedelta(days=1)).strftime('%d.%m.%Y'))
-                if len(curArtPubDate) < len("%d.%m.%Y %H:%M"):
-                    curArtPubDate = datetime.now().strftime('%d.%m.%Y') + ' ' + curArtPubDate
-                    rss_print.print_debug(__file__, "lisasime tänasele kellaajale kuupäeva: " + curArtPubDate, 3)
-                curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y %H:%M")
+                curArtPubDate = parsers_common.shortMonthsToNumber(curArtPubDate)
+                curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d %m, %Y %H:%M")
                 articlePostsPubDates.append(curArtPubDate)
 
                 # title

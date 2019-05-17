@@ -12,6 +12,8 @@ import requests
 import rss_config
 import rss_print
 
+cacheMainArticleBodies = False
+
 
 def getArticleData(articleURL, mainPage=False):
     """
@@ -26,21 +28,22 @@ def getArticleData(articleURL, mainPage=False):
     osCacheFolderDomain = osCacheFolder + '/' + cacheDomainFolder
     osCacheFolderDomainArticle = osCacheFolderDomain + '/' + cacheArticleURL
 
-    if mainPage is True:
-        # põhilehekülg tuleb alati alla laadida Internetist
-        rss_print.print_debug(__file__, "teeme internetipäringu lehele: " + articleURL)
+    if mainPage is True and cacheMainArticleBodies is False:
+        # põhilehekülg tuleb alati alla laadida Internetist, kui me pole devel režiimis
+        rss_print.print_debug(__file__, "teeme internetipäringu põhilehele: " + articleURL, 0)
         htmlPageString = makeReq(articleURL)
     else:
+        rss_print.print_debug(__file__, "hangitav leht: " + articleURL, 1)
         try:
             # proovime kõigepealt hankida kettalt
             with open(osCacheFolderDomainArticle, 'rb') as cacheReadFile:
                 htmlPageString = cacheReadFile.read()
                 rss_print.print_debug(__file__, "lugesime kettalt: " + osCacheFolderDomainArticle, 2)
         except Exception:
-            rss_print.print_debug(__file__, "ei õnnestunud kettalt lugeda: " + osCacheFolderDomainArticle)
+            rss_print.print_debug(__file__, "ei õnnestunud kettalt lugeda: " + osCacheFolderDomainArticle, 1)
 
             # kui kettalt ei leidnud, hangime veebist
-            rss_print.print_debug(__file__, "teeme internetipäringu lehele: " + articleURL)
+            rss_print.print_debug(__file__, "teeme internetipäringu lehele: " + articleURL, 0)
             htmlPageString = makeReq(articleURL)
 
             # ja salvestame alati kettale
@@ -55,7 +58,7 @@ def getArticleData(articleURL, mainPage=False):
     try:
         htmlPageString.decode("utf-8")
     except Exception:
-        rss_print.print_debug("makereg: parandame ebaõnnestunud 'UTF-8' as 'iso8859_15' kodeeringu veebilehel: " + articleURL)
+        rss_print.print_debug(__file__, "parandame ebaõnnestunud 'UTF-8' as 'iso8859_15' kodeeringu veebilehel: " + articleURL)
         htmlPageString = fixBrokenUTF8asEncoding(htmlPageString, 'iso8859_15')
 
     # eemaldame ::before, sest see teeb tõenäoliselt XML extractori katki
@@ -80,10 +83,10 @@ def fixBrokenUTF8asEncoding(brokenBytearray, encoding='iso8859_15'):  # 'iso8859
         try:
             byteUTF8inEncode = byteUnicode.encode('utf-8').decode(encoding)
         except Exception:
-            # rss_print.print_debug("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: pole sümbolit")
+            rss_print.print_debug(__file__, "i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: pole sümbolit", 4)
             continue
 
-        # rss_print.print_debug("i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: " + str(byteUTF8inEncode))
+        rss_print.print_debug(__file__, "i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: " + str(byteUTF8inEncode), 4)
         curBytearray = curBytearray.replace(byteUTF8inEncode, byteUnicode)
     curBytearray = curBytearray.replace('â', '"')
     curBytearray = curBytearray.replace('â', '"')

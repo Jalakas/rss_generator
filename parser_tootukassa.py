@@ -13,29 +13,28 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
     Meetod saidi pakkumiste nimekirja loomiseks
     """
 
-    articleDescriptions = pageTree.xpath('//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/p/text()')
-    articleIds = []
+    articleDescriptions = []
     articleImages = []
-    articlePubDates = pageTree.xpath('//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="right-content"]/div[@class="application-date"][1]/text()')
-    articleTitles = pageTree.xpath('//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/h2/a/text()')
-    articleUrls = pageTree.xpath('//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/h2/a/@href')
+    articlePubDates = parsers_common.xpath(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="right-content"]/div[@class="application-date"][1]/text()')
+    articleTitles = parsers_common.xpath(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/h2/a/text()')
+    articleUrls = parsers_common.xpath(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/h2/a/@href')
+
+    articleDescriptionsParents = parsers_common.xpath(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/p')  # as a parent
 
     for i in range(0, min(len(articleUrls), maxArticleCount)):
+        # clean up url
         articleUrls[i] = articleUrls[i].split('?ref=')[0]
-
-        # get unique id from articleUrl
-        articleIds.append(articleUrls[i].split('-')[-1])
 
         # timeformat magic from "Avaldatud: 12.12.2017" to datetime()
         curArtPubDate = articlePubDates[i].split(': ')[1]
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y")
         articlePubDates[i] = curArtPubDate
 
-        # title
-        articleDescriptions[i] = parsers_common.toPlaintext(articleDescriptions[i]).capitalize()
+        # description
+        curArtDescriptionsChilds = parsers_common.stringify_children(articleDescriptionsParents[i])
+        articleDescriptions.append(curArtDescriptionsChilds)
 
     return {"articleDescriptions": articleDescriptions,
-            "articleIds": articleIds,
             "articleImages": articleImages,
             "articlePubDates": articlePubDates,
             "articleTitles": articleTitles,

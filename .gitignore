@@ -7,3 +7,5 @@ latest_feeds/
 older_feeds/
 serverside/
 rss_config.py
+geckodriver
+geckodriver.log

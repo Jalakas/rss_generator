@@ -14,17 +14,14 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
     Meetod saidi kõigi uudiste nimekirja loomiseks
     """
 
+    articleAuthors = parsers_common.xpath(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="search-result__authors"]/text()')
     articleDescriptions = []
-    articleIds = []
     articleImages = []
-    articlePubDates = pageTree.xpath('//ul[@class="search-results"]/li/div/div/span[2]/text()')
-    articleTitles = pageTree.xpath('//ul[@class="search-results"]/li/div/span/a/text()')
-    articleUrls = pageTree.xpath('//ul[@class="search-results"]/li/div/span/a/@href')
+    articlePubDates = parsers_common.xpath(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/div/span[2]/text()')
+    articleTitles = parsers_common.xpath(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/span/a/text()')
+    articleUrls = parsers_common.xpath(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/span/a/@href')
 
     for i in range(0, min(len(articleUrls), maxArticleCount)):
-        # get unique id from ArticleUrl
-        articleIds.append(articleUrls[i].split('/')[-2])
-
         # timeformat magic from "24.12.2017 17:51" to datetime()
         curArtPubDate = articlePubDates[i]
         curArtPubDate = parsers_common.longMonthsToNumber(curArtPubDate)
@@ -33,11 +30,8 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
 
         if (getArticleBodies is True):
             # load article into tree
-            articleTree = parsers_common.getArticleData(articleUrls[i])
+            articleTree = parsers_common.getArticleData(domain, articleUrls[i], False)
             articleTreeBuf = articleTree
-
-            # laeme topelt, kuna parser ei suutnud muidu samast dokumendist asju leida
-            # articleTreeBuf = parsers_common.getArticleData(articleUrls[i]
 
             # description1 - enne pilti kokkuvõte
             curArtDescParent1 = parsers_common.treeExtract(articleTree, '//article/div[@class="article"][1]/div[@class="flex"]//div[@class="article-body__item article-body__item--articleBullets"]')  # as a parent
@@ -83,8 +77,8 @@ def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies)
             curArtImg = "http:" + curArtImg
             articleImages.append(curArtImg)
 
-    return {"articleDescriptions": articleDescriptions,
-            "articleIds": articleIds,
+    return {"articleAuthors": articleAuthors,
+            "articleDescriptions": articleDescriptions,
             "articleImages": articleImages,
             "articlePubDates": articlePubDates,
             "articleTitles": articleTitles,

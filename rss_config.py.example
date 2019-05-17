@@ -5,7 +5,8 @@
     Privaatsed seadistused
 """
 
-upload_url = 'http://your.url/script.php'
+host_url = 'http://your.url/'
+upload_url = host_url + 'script.php'
 upload_name = 'filename'
 
 headers = {
