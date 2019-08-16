@@ -6,50 +6,34 @@
 """
 
 import parsers_common
+import rss_print
 
 
-def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
-    """
-    Meetod Tartu aarete nimekirja loomiseks
-    """
+def getArticleListsFromHtml(articleDataDict, pageTree, domain, maxArticleCount, getArticleBodies):
 
-    articleDescriptions = []
-    # articleImages = []
-    articlePubDates = parsers_common.xpath(pageTree, '//div[@id="t-content"]/table[1]/tr/td[1]/text()')
-    articleTitles = parsers_common.xpath(pageTree, '//div[@id="t-content"]/table[1]/tr/td[@class="left"]/b/a/text()')
-    articleUrls = parsers_common.xpath(pageTree, '//div[@id="t-content"]/table[1]/tr/td[@class="left"]/b/a/@href')
+    articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '//div[@id="t-content"]/table[1]/tr/td[1]/text()')
+    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//div[@id="t-content"]/table[1]/tr/td[@class="left"]/b/a/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//div[@id="t-content"]/table[1]/tr/td[@class="left"]/b/a/@href')
 
-    articleDescriptionsParents = parsers_common.xpath(pageTree, '//div[@id="t-content"]/table[1]/tr')  # as a parent
+    articleDescriptionsParents = parsers_common.xpath_to_list(pageTree, '//div[@id="t-content"]/table[1]/tr')
 
-    retArticleDescriptions = []
-    retArticleImages = []
-    retArticlePubDates = []
-    retArticleTitles = []
-    retArticleUrls = []
-
-    for i in range(0, min(len(articleUrls), maxArticleCount)):
+    for i in parsers_common.articleUrlsRange(articleDataDict["urls"]):
         # description
-        curArtDescParent = articleDescriptionsParents[i]
-        curArtDescriptionsChilds = parsers_common.stringify_children(curArtDescParent)
-        articleDescriptions.append(curArtDescriptionsChilds)
+        curArtDescChilds = parsers_common.stringify_index_children(articleDescriptionsParents, i)
+        articleDataDict["descriptions"].append(curArtDescChilds)
 
         # timeformat magic from "12.12.2017" to datetime()
-        curArtPubDate = articlePubDates[i]
+        curArtPubDate = articleDataDict["pubDates"][i]
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y")
-        articlePubDates[i] = curArtPubDate
+        articleDataDict["pubDates"][i] = curArtPubDate
 
-    # remove non "Tartu" location lines
-    for i in range(0, min(len(articleUrls), maxArticleCount)):
-        if ('Tartu' in articleDescriptions[i]):
-            retArticleDescriptions.append(articleDescriptions[i])
-            # retArticleImages.append(articleImages[i])
-            retArticlePubDates.append(articlePubDates[i])
-            retArticleTitles.append(articleTitles[i])
-            retArticleUrls.append(articleUrls[i])
+    # remove unwanted content
+    k = 0
+    while (k < min(len(articleDataDict["urls"]), maxArticleCount)):
+        rss_print.print_debug(__file__, "kontrollime kannet: " + str(k + 1) + ", kokku: " + str(len(articleDataDict["urls"])), 4)
+        if ('Tartu' not in articleDataDict["descriptions"][k]):
+            articleDataDict = parsers_common.del_article_dict_index(articleDataDict, k)
+        else:
+            k += 1
 
-    return {"articleDescriptions": retArticleDescriptions,
-            "articleImages": retArticleImages,
-            "articlePubDates": retArticlePubDates,
-            "articleTitles": retArticleTitles,
-            "articleUrls": retArticleUrls,
-           }
+    return articleDataDict

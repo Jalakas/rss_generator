@@ -8,27 +8,19 @@
 import parsers_common
 
 
-def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
-    """
-    Meetod saidi kõigi uudiste nimekirja loomiseks
-    """
+def getArticleListsFromHtml(articleDataDict, pageTree, domain, maxArticleCount, getArticleBodies):
 
-    articleDescriptions = []
-    articleImages = parsers_common.xpath(pageTree, '//div[@class="product"]//div[@class="table-cell image-cell"]/img/@src')
-    articlePubDates = []
-    articleTitles = parsers_common.xpath(pageTree, '//div[@class="product"]//div[@class="table-cell description-cell"]/h2/text()')
-    articleUrls = parsers_common.xpath(pageTree, '//div[@class="product"]//div[@class="table-cell description-cell"]/a/@href')
+    articleDataDict["images"] = parsers_common.xpath_to_list(pageTree, '//div[@class="product"]/div[@class="image-cell"]/img/@src')
+    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//div[@class="product"]/div[@class="description-cell"]/h2/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//div[@class="product"]/div[@class="description-cell"]/a/@href')
 
-    articleDescriptionsParents = parsers_common.xpath(pageTree, '//div[@class="product"]//div[@class="table-cell description-cell"]')  # as a parent
+    articlePriceParents = parsers_common.xpath_to_list(pageTree, '//div[@class="product"]/div[@class="price-cell"]')  # as a parent
+    articleDescriptionsParents = parsers_common.xpath_to_list(pageTree, '//div[@class="product"]/div[@class="description-cell"]')  # as a parent
 
-    for i in range(0, min(len(articleUrls), maxArticleCount)):
+    for i in parsers_common.articleUrlsRange(articleDataDict["urls"]):
         # description
-        curArtDescriptionsChilds = parsers_common.stringify_children(articleDescriptionsParents[i])
-        articleDescriptions.append(curArtDescriptionsChilds)
+        curArtPriceChilds = parsers_common.stringify_index_children(articlePriceParents, i)
+        curArtDescChilds = parsers_common.stringify_index_children(articleDescriptionsParents, i)
+        articleDataDict["descriptions"].append(curArtPriceChilds + curArtDescChilds)
 
-    return {"articleDescriptions": articleDescriptions,
-            "articleImages": articleImages,
-            "articlePubDates": articlePubDates,
-            "articleTitles": articleTitles,
-            "articleUrls": articleUrls,
-           }
+    return articleDataDict

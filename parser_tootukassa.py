@@ -2,41 +2,31 @@
 # -*- coding: utf-8 -*-
 
 """
-    Töötukassa RSS-voo sisendite parsimine
+    RSS-voo sisendite parsimine
 """
 
 import parsers_common
 
 
-def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
-    """
-    Meetod saidi pakkumiste nimekirja loomiseks
-    """
+def getArticleListsFromHtml(articleDataDict, pageTree, domain, maxArticleCount, getArticleBodies):
 
-    articleDescriptions = []
-    articleImages = []
-    articlePubDates = parsers_common.xpath(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="right-content"]/div[@class="application-date"][1]/text()')
-    articleTitles = parsers_common.xpath(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/h2/a/text()')
-    articleUrls = parsers_common.xpath(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/h2/a/@href')
+    articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="right-content"]/div[@class="application-date"][1]/text()')
+    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/h2/a/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/h2/a/@href')
 
-    articleDescriptionsParents = parsers_common.xpath(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/p')  # as a parent
+    articleDescriptionsParents = parsers_common.xpath_to_list(pageTree, '//div[@class="applied-jobs"]/div/div[@class="job-content"]/div[@class="left-content"]/p')  # as a parent
 
-    for i in range(0, min(len(articleUrls), maxArticleCount)):
+    for i in parsers_common.articleUrlsRange(articleDataDict["urls"]):
         # clean up url
-        articleUrls[i] = articleUrls[i].split('?ref=')[0]
+        articleDataDict["urls"][i] = articleDataDict["urls"][i].split('?ref=')[0]
 
         # timeformat magic from "Avaldatud: 12.12.2017" to datetime()
-        curArtPubDate = articlePubDates[i].split(': ')[1]
+        curArtPubDate = articleDataDict["pubDates"][i].split(': ')[1]
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y")
-        articlePubDates[i] = curArtPubDate
+        articleDataDict["pubDates"][i] = curArtPubDate
 
         # description
-        curArtDescriptionsChilds = parsers_common.stringify_children(articleDescriptionsParents[i])
-        articleDescriptions.append(curArtDescriptionsChilds)
+        curArtDescChilds = parsers_common.stringify_index_children(articleDescriptionsParents, i)
+        articleDataDict["descriptions"].append(curArtDescChilds)
 
-    return {"articleDescriptions": articleDescriptions,
-            "articleImages": articleImages,
-            "articlePubDates": articlePubDates,
-            "articleTitles": articleTitles,
-            "articleUrls": articleUrls,
-           }
+    return articleDataDict

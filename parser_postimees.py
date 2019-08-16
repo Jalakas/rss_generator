@@ -9,78 +9,74 @@ import parsers_common
 import rss_print
 
 
-def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
-    """
-    Meetod saidi kõigi uudiste nimekirja loomiseks
-    """
+def getArticleListsFromHtml(articleDataDict, pageTree, domain, maxArticleCount, getArticleBodies):
 
-    articleAuthors = parsers_common.xpath(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="search-result__authors"]/text()')
-    articleDescriptions = []
-    articleImages = []
-    articlePubDates = parsers_common.xpath(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/div/span[2]/text()')
-    articleTitles = parsers_common.xpath(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/span/a/text()')
-    articleUrls = parsers_common.xpath(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/span/a/@href')
+    articleDataDict["authors"] = parsers_common.xpath_to_list(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="search-result__authors"]/text()')
+    articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/div/span[2]/text()')
+    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/span/a/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/span/a/@href')
 
-    for i in range(0, min(len(articleUrls), maxArticleCount)):
+    for i in parsers_common.articleUrlsRange(articleDataDict["urls"]):
         # timeformat magic from "24.12.2017 17:51" to datetime()
-        curArtPubDate = articlePubDates[i]
-        curArtPubDate = parsers_common.longMonthsToNumber(curArtPubDate)
+        curArtPubDate = parsers_common.monthsToNumber(articleDataDict["pubDates"][i])
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m.%Y, %H:%M")
-        articlePubDates[i] = curArtPubDate
+        articleDataDict["pubDates"][i] = curArtPubDate
 
-        if (getArticleBodies is True):
+        if (getArticleBodies is True) and (i < maxArticleCount):
             # load article into tree
-            articleTree = parsers_common.getArticleData(domain, articleUrls[i], False)
-            articleTreeBuf = articleTree
+            articleTree = parsers_common.getArticleData(domain, articleDataDict["urls"][i], False)
 
             # description1 - enne pilti kokkuvõte
-            curArtDescParent1 = parsers_common.treeExtract(articleTree, '//article/div[@class="article"][1]/div[@class="flex"]//div[@class="article-body__item article-body__item--articleBullets"]')  # as a parent
-            curArtDescriptionsChilds1 = parsers_common.stringify_children(curArtDescParent1)
-            rss_print.print_debug(__file__, "1. kirjeldusplokk on tühi (Pildieelne kirjeldusplokk puudub?)", 2)
+            if (True):
+                curArtDescChilds1 = parsers_common.xpath_parent_to_single(articleTree, '//article/div[@class="article"][1]/div[@class="flex"]//div[@class="article-body__item article-body__item--articleBullets"]')
 
             # description2 - sissejuhatus pärast pilti
-            articleTree = articleTreeBuf
-            curArtDescParent2 = parsers_common.treeExtract(articleTree, '//article/div[@class="article"][1]//div[@class="article-body__item article-body__item--htmlElement article-body__item--lead"][1]')  # as a parent
-            curArtDescriptionsChilds2 = parsers_common.stringify_children(curArtDescParent2)
-            if (curArtDescriptionsChilds2 == ""):
-                curArtDescParent2 = parsers_common.treeExtract(articleTree, '//article/div[@class="article"][1]//div[@class="article-body__item article-body__item--htmlElement"]')  # as a parent
-                # '//article/div[@class="article"]//div[@class="flex--equal-width"]')  # as a parent
-                curArtDescriptionsChilds2 = parsers_common.stringify_children(curArtDescParent2)
-                if (curArtDescriptionsChilds2 == ""):
-                    rss_print.print_debug(__file__, "2. kirjeldusplokk on tühi, alternatiiv ka tühi (Pildi järel puudub sissejuhatus?)")
+            if (True):
+                curArtDescChilds2 = parsers_common.xpath_parent_to_single(articleTree, '//article/div[@class="article"][1]//div[@class="article-body__item article-body__item--htmlElement article-body__item--lead"][1]')
+            if (curArtDescChilds2 == ""):
+                curArtDescChilds2 = parsers_common.xpath_parent_to_single(articleTree, '//article/div[@class="article"][1]//div[@class="article-body__item article-body__item--htmlElement"]')
+            if (curArtDescChilds2 == ""):
+                curArtDescChilds2 = parsers_common.xpath_parent_to_single(articleTree, '//article/div[@class="article"]//div[@class="article-body article-body--left"]')
+            curArtDescChilds2 = parsers_common.rstrip_string(curArtDescChilds2, "<")
 
             # description3 - tasuta artikli sisu
-            articleTree = articleTreeBuf
-            curArtDescParent3 = parsers_common.treeExtract(articleTree, '//div[@class="article"][2]//div[@class="article-body article-body--left"]')  # as a parent
-            curArtDescriptionsChilds3 = parsers_common.stringify_children(curArtDescParent3)
-            if (curArtDescriptionsChilds3 == ""):
-                rss_print.print_debug(__file__, "3. kirjeldusploki esimest varianti ei leitud, proovime teist", 2)
-                curArtDescParent3 = parsers_common.treeExtract(articleTree, '//article/div[@class="article"][1]//div[@class="article-body__item article-body__item--htmlElement"][1]')  # as a parent
-                curArtDescriptionsChilds3 = parsers_common.stringify_children(curArtDescParent3)
-                if (curArtDescriptionsChilds3 == ""):
-                    rss_print.print_debug(__file__, "3. kirjeldusplokk on tühi, alternatiiv ka tühi (Ainult tellijale leht?)")
+            if (True):
+                curArtDescChilds3 = parsers_common.xpath_parent_to_single(articleTree, '//div[@class="article"][2]//div[@class="article-body article-body--left"]')
+            if (curArtDescChilds3 == ""):
+                curArtDescChilds3 = parsers_common.xpath_parent_to_single(articleTree, '//article/div[@class="article"][1]//div[@class="article-body__item article-body__item--htmlElement"][1]')
 
-            articleDescriptions.append(
-                curArtDescriptionsChilds1 + ' <br/> ' + curArtDescriptionsChilds2 + ' <br/> ' + curArtDescriptionsChilds3)
+            # description
+            articleDataDict["descriptions"].append(curArtDescChilds1 + ' ' + curArtDescChilds2 + ' ' + curArtDescChilds3)
 
             # image
-            curArtImg = parsers_common.treeExtract(articleTree, '//figure/img[1]/@src') or "//"
-            if (curArtImg == "//"):
+            if (True):
+                curArtImg = parsers_common.xpath_to_single(articleTree, '//figure/img[1]/@src')
+            if (curArtImg == ""):
                 rss_print.print_debug(__file__, "1. pilditüüpi ei leitud", 1)
-                curArtImg = parsers_common.treeExtract(articleTree, '//div[@class="article-body__item article-body__item--image  "]//figure/img[1]/@src') or "//"
-                if (curArtImg == "//"):
-                    rss_print.print_debug(__file__, "2. pilditüüpi ei leitud", 1)
-                    # mitme pildi galerii avapilt
-                    curArtImg = parsers_common.treeExtract(articleTree, '//div[@class="VueCarousel-slide gallery-image"]/@style') or "//"
-                    if (curArtImg == "//"):
-                        rss_print.print_debug(__file__, "ühtegi pilditüüpi ei leitud", 0)
-            curArtImg = "http:" + curArtImg
-            articleImages.append(curArtImg)
+                curArtImg = parsers_common.xpath_to_single(articleTree, '//div[@class="article-body__item article-body__item--image  "]//figure/img[1]/@src')
+            if (curArtImg == ""):
+                rss_print.print_debug(__file__, "2. pilditüüpi ei leitud", 1)
+                curArtImg = parsers_common.xpath_to_single(articleTree, '//meta[@property="og:image"]/@content')
+            articleDataDict["images"].append(curArtImg)
 
-    return {"articleAuthors": articleAuthors,
-            "articleDescriptions": articleDescriptions,
-            "articleImages": articleImages,
-            "articlePubDates": articlePubDates,
-            "articleTitles": articleTitles,
-            "articleUrls": articleUrls,
-           }
+            #  kontrollid
+            if (curArtDescChilds1 == ""):
+                rss_print.print_debug(__file__, "1. kirjeldusplokk on tühi. (Pildieelne kirjeldusplokk puudub?)", 2)
+            else:
+                rss_print.print_debug(__file__, "curArtDescChilds1 = " + str(curArtDescChilds1), 3)
+            if (curArtDescChilds2 == ""):
+                if (articleDataDict["urls"][i].find("-kuulutused-") < 0):
+                    rss_print.print_debug(__file__, "2. kirjeldusplokk on tühi. (Pildi järel puudub sissejuhatus?)", 1)
+            else:
+                rss_print.print_debug(__file__, "curArtDescChilds2 = " + str(curArtDescChilds2), 3)
+            if (curArtDescChilds3 == ""):
+                if (articleDataDict["urls"][i].find("-kuulutused-") < 0):
+                    rss_print.print_debug(__file__, "3. kirjeldusplokk on tühi. (Ainult tellijale leht?)", 1)
+            else:
+                rss_print.print_debug(__file__, "curArtDescChilds3 = " + str(curArtDescChilds3), 3)
+            if (curArtImg == ""):
+                rss_print.print_debug(__file__, "ühtegi pilditüüpi ei leitud", 0)
+            else:
+                rss_print.print_debug(__file__, "curArtImg = " + str(curArtImg), 3)
+
+    return articleDataDict

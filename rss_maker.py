@@ -6,6 +6,8 @@
 """
 
 import datetime
+import re
+import time
 from email import utils
 from lxml import etree
 
@@ -42,17 +44,17 @@ def rssmaker(dataset, title_text, domain_text, link_text, description_text, href
     # atom.set("rel", "self")
     # atom.set("type", "application/rss+xml")
 
-    if (len(dataset['articleUrls']) < 1):
+    if (len(dataset["urls"]) < 1):
         rss_print.print_debug(__file__, "ei leitud ühtegi url-i lingilt: " + str(link_text))
 
-    for i in range(0, len(dataset['articleUrls'])):
+    for i in range(0, len(dataset["urls"])):
         item = etree.SubElement(channel, "item")
 
-        if ('articleUrls' in dataset and i < len(list(dataset['articleUrls'])) and list(dataset['articleUrls'])[i] is not None):
+        if ("urls" in dataset and i < len(list(dataset["urls"])) and list(dataset["urls"])[i] is not None):
             item_guid = etree.SubElement(item, "guid")  # https://cyber.harvard.edu/rss/rss.html: A string that uniquely identifies the item.
             item_link = etree.SubElement(item, "link")
 
-            cur_value = list(dataset['articleUrls'])[i]
+            cur_value = list(dataset["urls"])[i]
             cur_value = cur_value.strip().rstrip("/")
 
             if (cur_value.find('http', 0, 4) == -1):
@@ -67,80 +69,112 @@ def rssmaker(dataset, title_text, domain_text, link_text, description_text, href
             item_guid.text = cur_value_without_http
             item_link.text = cur_value
 
-        if ('articleTitles' in dataset and i < len(list(dataset['articleTitles'])) and list(dataset['articleTitles'])[i] is not None):
+        if ("titles" in dataset and i < len(list(dataset["titles"])) and list(dataset["titles"])[i] is not None):
             item_title = etree.SubElement(item, "title")
 
-            cur_value = list(dataset['articleTitles'])[i]
+            cur_value = list(dataset["titles"])[i]
             cur_value = cur_value.replace("<br>", " ")
-            item_title.text = cur_value.strip()
+            cur_value = cur_value.strip()
+            cur_value = parsers_common.capitalizeFirst(cur_value)
+            item_title.text = cur_value
         else:
             rss_print.print_debug(__file__, "järgneval aadressil puudus vajalik pealkiri: " + str(item_link.text))
             item_title = etree.SubElement(item, "title")
             item_title.text = title.text + " " + item_guid.text
 
-        if ('articleDescriptions' in dataset and i < len(list(dataset['articleDescriptions'])) and list(dataset['articleDescriptions'])[i] is not None):
+        if ("descriptions" in dataset and i < len(list(dataset["descriptions"])) and list(dataset["descriptions"])[i] is not None):
             item_description = etree.SubElement(item, "description")
 
-            cur_value = list(dataset['articleDescriptions'])[i]
+            cur_value = list(dataset["descriptions"])[i]
+
+            # remove trackers from links
+            cur_value = re.sub(r'" onclick[\s\S]*?;', "", cur_value)
+            cur_value = re.sub(r'_ga=[0-9.-]*', "", cur_value)
+            cur_value = re.sub(r'fbclid=[0-9A-Za-z-]*', "", cur_value)
+            cur_value = re.sub(r'gclid=[0-9A-Za-z-_]*', "", cur_value)
+            cur_value = re.sub(r'utm_source=pm_fb[0-9A-Za-z&_=]*', "", cur_value)
+
+            cur_value = cur_value.replace("?&", "?")
+
+            # fix links addresses
             cur_value = cur_value.replace('src="./', 'src="' + domain_text + '/')
             cur_value = cur_value.replace('src="/', 'src="' + domain_text + '/')
             cur_value = cur_value.replace('href="./', 'href="' + domain_text + '/')
             cur_value = cur_value.replace('href="/', 'href="' + domain_text + '/')
+
+            # remove useless space
             cur_value = cur_value.replace("<br/>", "<br>")
             cur_value = cur_value.replace("<br><br>", "<br>")
             cur_value = cur_value.strip()
             cur_value = parsers_common.lstrip_string(cur_value, "<br>")
+
+            cur_value = parsers_common.capitalizeFirst(cur_value)
             item_description.text = cur_value.encode('ascii', 'xmlcharrefreplace').strip()
         else:
             rss_print.print_debug(__file__, "järgneval pealkirjal puudus vajalik kirjeldus: " + str(item_title.text))
             item_description = etree.SubElement(item, "description")
             item_description.text = item_title.text
 
-        if ('articlePubDates' in dataset and i < len(list(dataset['articlePubDates'])) and list(dataset['articlePubDates'])[i] is not None):
-            item_pubDate = etree.SubElement(item, "pubDate")  # https://cyber.harvard.edu/rss/rss.html: Tue, 03 Jun 2003 09:39:21 GMT
+        if ("pubDates" in dataset and i < len(list(dataset["pubDates"])) and list(dataset["pubDates"])[i] is not None):
+            item_pubDate = etree.SubElement(item, "pubDate")  # https://cyber.harvard.edu/rss/rss.html
 
-            cur_value = list(dataset['articlePubDates'])[i]
-            item_pubDate.text = cur_value.encode('ascii', 'xmlcharrefreplace').strip()
+            cur_value = list(dataset["pubDates"])[i]
 
-        if ('articleImages' in dataset and i < len(list(dataset['articleImages'])) and list(dataset['articleImages'])[i] is not None):
+            curTimeFormat = "%a, %d %b %Y %H:%M:%S %z"  # Fri, 17 May 2019 13:37:00 +0300
+            curTimeFloat = time.time()
+            postTimeFloat = parsers_common.rawToFloat(cur_value, curTimeFormat)
+            postTimeFloatLimit = (curTimeFloat - 31 * 24 * 60 * 60)
+            if postTimeFloat <= 1:
+                rss_print.print_debug(__file__, "posti: '" + item_title.text + "' aeg: '" + str(cur_value) + "' on eelajalooline!, asendame hetkeajaga", 0)
+                cur_value = parsers_common.floatToDatetime(curTimeFloat, curTimeFormat)
+                item_pubDate.text = cur_value.strip()
+            elif postTimeFloat < postTimeFloatLimit:
+                rss_print.print_debug(__file__, "posti: '" + item_title.text + "' aeg: '" + str(cur_value) + "' on vanem kui 31 päeva, eemaldame kande", 2)
+                channel.remove(item)
+            elif postTimeFloat > curTimeFloat:
+                rss_print.print_debug(__file__, "posti: '" + item_title.text + "' aeg: '" + str(cur_value) + "' on tulevikust?", 0)
+                item_pubDate.text = cur_value.strip()
+            else:
+                item_pubDate.text = cur_value.strip()
+
+        if ("images" in dataset and i < len(list(dataset["images"])) and list(dataset["images"])[i] is not None):
             # https://cyber.harvard.edu/rss/rss.html
             # <enclosure url="http://www.scripting.com/mp3s/weatherReportSuite.mp3" length="12216320" type="audio/mpeg" />
 
-            cur_value = list(dataset['articleImages'])[i]
+            cur_value = list(dataset["images"])[i]
+
+            if cur_value.find("//") == 0:
+                rss_print.print_debug(__file__, "lisame meedialingi algusesse 'http:': " + str(cur_value), 1)
+                cur_value = "http:" + cur_value
+
             cur_value = cur_value.replace("https", "http")
 
             if len(cur_value) < len(domain_text + "1.jpg"):
-                rss_print.print_debug(__file__, "ei lisa RSS-i pildilinki, kuna see on liiga lühike: " + str(cur_value))
+                rss_print.print_debug(__file__, "ei lisa RSS-i meedialinki, kuna see on liiga lühike: '" + str(cur_value) + "'", 0)
             else:
                 if (cur_value.find('http', 0, 4) == -1):
-                    rss_print.print_debug(__file__, "pildi lingist ei leitud http-d: " + str(cur_value), 2)
+                    rss_print.print_debug(__file__, "meedialingist ei leitud http-d: '" + str(cur_value) + "'", 3)
                     cur_value = parsers_common.domainUrl(domain_text, cur_value)
+                item_enc_url = cur_value.strip()
 
-                item_enc_url = str(cur_value).encode('ascii', 'xmlcharrefreplace').strip()
-
-                if b'.jpg' in (item_enc_url):
+                if ".jpg" in (item_enc_url):
                     item_enc_type = "image/jpeg"
-                elif b'.jpeg' in (item_enc_url):
+                elif ".jpeg" in (item_enc_url):
                     item_enc_type = "image/jpeg"
-                elif b'.png' in (item_enc_url):
+                elif ".png" in (item_enc_url):
                     item_enc_type = "image/png"
-                elif b'.mp3' in (item_enc_url):
+                elif ".mp3" in (item_enc_url):
                     item_enc_type = "audio/mpeg"
                 else:
                     item_enc_type = ""
 
-                enclosure_attrib = {'url': item_enc_url,
-                                    'length': '',
-                                    'type': item_enc_type,
-                                   }
+                etree.SubElement(item, "enclosure", {'url': item_enc_url, 'length': '', 'type': item_enc_type, })
 
-                etree.SubElement(item, "enclosure", enclosure_attrib)
-
-        if ('articleAuthors' in dataset and i < len(list(dataset['articleAuthors'])) and list(dataset['articleAuthors'])[i] is not None):
+        if ("authors" in dataset and i < len(list(dataset["authors"])) and list(dataset["authors"])[i] is not None):
             item_author = etree.SubElement(item, "author")
             item_author_name = etree.SubElement(item_author, "name")
 
-            cur_value = list(dataset['articleAuthors'])[i]
+            cur_value = list(dataset["authors"])[i]
             item_author_name.text = cur_value.strip()
 
     return(etree.ElementTree(root))

@@ -2,41 +2,31 @@
 # -*- coding: utf-8 -*-
 
 """
-    Rahvusarhiivi RSS-voo sisendite parsimine
+    RSS-voo sisendite parsimine
 """
 
 import parsers_common
 
 
-def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
-    """
-    Meetod kõigi uudiste nimekirja loomiseks
-    """
+def getArticleListsFromHtml(articleDataDict, pageTree, domain, maxArticleCount, getArticleBodies):
 
-    articleDescriptions = []
-    articleImages = []
-    articlePubDates = parsers_common.xpath(pageTree, '//li[@class="b-posts__list-item"]/p[@class="b-posts__list-item-summary"]/text()')
-    articleTitles = parsers_common.xpath(pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/text()')
-    articleUrls = parsers_common.xpath(pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/@href')
+    articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '//li[@class="b-posts__list-item"]/p[@class="b-posts__list-item-summary"]/text()')
+    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/@href')
 
-    for i in range(0, min(len(articleUrls), maxArticleCount)):
+    for i in parsers_common.articleUrlsRange(articleDataDict["urls"]):
         # timeformat magic from "03.01" to datetime()
-        curArtPubDate = articlePubDates[i].strip()
-        curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d.%m")
-        articlePubDates[i] = curArtPubDate
+        curArtPubDate = articleDataDict["pubDates"][i].strip()
+        curArtPubDate = parsers_common.add_to_time_string(curArtPubDate, "%Y.")
+        curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%Y.%d.%m")
+        articleDataDict["pubDates"][i] = curArtPubDate
 
-        if (getArticleBodies is True):
+        if (getArticleBodies is True) and (i < maxArticleCount):
             # load article into tree
-            articleTree = parsers_common.getArticleData(domain, articleUrls[i], False)
+            articleTree = parsers_common.getArticleData(domain, articleDataDict["urls"][i], False)
 
             # description
-            curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@class="b-article"]')  # as a parent
-            curArtDescriptionsChilds = parsers_common.stringify_children(curArtDescParent)
-            articleDescriptions.append(curArtDescriptionsChilds)
+            curArtDescChilds = parsers_common.xpath_parent_to_single(articleTree, '//div[@class="b-article"]')
+            articleDataDict["descriptions"].append(curArtDescChilds)
 
-    return {"articleDescriptions": articleDescriptions,
-            "articleImages": articleImages,
-            "articlePubDates": articlePubDates,
-            "articleTitles": articleTitles,
-            "articleUrls": articleUrls,
-           }
+    return articleDataDict

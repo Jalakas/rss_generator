@@ -8,42 +8,33 @@
 import parsers_common
 
 
-def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
-    """
-    Meetod saidi kõigi uudiste nimekirja loomiseks
-    """
+def getArticleListsFromHtml(articleDataDict, pageTree, domain, maxArticleCount, getArticleBodies):
 
-    articleDescriptions = []
-    articleImages = []
-    articlePubDates = parsers_common.xpath(pageTree, '//div[@class="js-newsline-container"]/span[1]/text()')
-    articleTitles = parsers_common.xpath(pageTree, '//div[@class="js-newsline-container"]/div/a/text()')
-    articleUrls = parsers_common.xpath(pageTree, '//div[@class="js-newsline-container"]/div/a/@href')
+    articleDataDict["descriptions"] = []
+    articleDataDict["images"] = []
+    articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '//div[@class="js-newsline-container"]/span[1]/text()')
+    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//div[@class="js-newsline-container"]/div/a/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//div[@class="js-newsline-container"]/div/a/@href')
 
-    articleDescriptionsTag = parsers_common.xpath(pageTree, '//div[@class="js-newsline-container"]/div/span[1]/text()')
-    articleDescriptionsRaw = parsers_common.xpath(pageTree, '//div[@class="js-newsline-container"]/div/a/text()')
+    articleDescriptionsTag = parsers_common.xpath_to_list(pageTree, '//div[@class="js-newsline-container"]/div/span[1]/text()')
+    articleDescriptionsRaw = parsers_common.xpath_to_list(pageTree, '//div[@class="js-newsline-container"]/div/a/text()')
 
-    for i in range(0, min(len(articleUrls), maxArticleCount)):
+    for i in parsers_common.articleUrlsRange(articleDataDict["urls"]):
         # timeformat magic from "14 dets  2017 11:34" to datetime()
-        curArtPubDate = articlePubDates[i]
-        curArtPubDate = parsers_common.shortMonthsToNumber(curArtPubDate)
+        curArtPubDate = articleDataDict["pubDates"][i]
+        curArtPubDate = parsers_common.monthsToNumber(curArtPubDate)
         curArtPubDate = parsers_common.rawToDatetime(curArtPubDate, "%d %m %Y %H:%M")
-        articlePubDates[i] = curArtPubDate
+        articleDataDict["pubDates"][i] = curArtPubDate
 
         if (getArticleBodies is True):
             # load article into tree
-            articleTree = parsers_common.getArticleData(domain, articleUrls[i], False)
+            articleTree = parsers_common.getArticleData(domain, articleDataDict["urls"][i], False)
 
             # description
-            curArtDescParent = parsers_common.treeExtract(articleTree, '//div[@class="news-preview"]/div')  # as a parent
-            curArtDescriptionsChilds = parsers_common.stringify_children(curArtDescParent)
-            articleDescriptions.append(curArtDescriptionsChilds)
+            curArtDescChilds = parsers_common.xpath_parent_to_single(articleTree, '//div[@class="news-preview"]/div')
+            articleDataDict["descriptions"].append(curArtDescChilds)
         else:
             # description
-            articleDescriptions.append(articleDescriptionsTag[i] + "<br>" + articleDescriptionsRaw[i])
+            articleDataDict["descriptions"].append(articleDescriptionsTag[i] + "<br>" + articleDescriptionsRaw[i])
 
-    return {"articleDescriptions": articleDescriptions,
-            "articleImages": articleImages,
-            "articlePubDates": articlePubDates,
-            "articleTitles": articleTitles,
-            "articleUrls": articleUrls,
-           }
+    return articleDataDict

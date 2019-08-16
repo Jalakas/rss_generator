@@ -2,38 +2,25 @@
 # -*- coding: utf-8 -*-
 
 """
-    Stokker Outlet RSS-voo sisendite parsimine
+    RSS-voo sisendite parsimine
 """
 
 import parsers_common
 
 
-def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
-    """
-    Meetod kõigi pakkumiste nimekirja loomiseks
-    """
+def getArticleListsFromHtml(articleDataDict, pageTree, domain, maxArticleCount, getArticleBodies):
 
-    articleDescriptions = []
-    articleImages = parsers_common.xpath(pageTree, '//div[@class="product_camp_box   w"]/a/div/div[@class="leftC"]/div/img/@src')
-    articlePubDates = []
-    articleTitles = parsers_common.xpath(pageTree, '//div[@class="product_camp_box   w"]/a/div/div[@class="leftC"]/h3/text()')
-    articleUrls = parsers_common.xpath(pageTree, '//div[@class="product_camp_box   w"]/a/@href')
+    articleDataDict["images"] = parsers_common.xpath_to_list(pageTree, '//div[@class="product_camp_box   w"]/a/div/div[@class="leftC"]/div/img/@src')
+    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//div[@class="product_camp_box   w"]/a/div/div[@class="leftC"]/h3/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//div[@class="product_camp_box   w"]/a/@href')
 
-    articleDescriptionsParents = parsers_common.xpath(pageTree, '//div[@class="product_camp_box   w"]/a/div/div[@class="leftC"]')  # as a parent
-    articlePriceParents = parsers_common.xpath(pageTree, '//div[@class="product_camp_box   w"]/div[@class="priceCont"]')  # as a parent
+    articlePriceParents = parsers_common.xpath_to_list(pageTree, '//div[@class="product_camp_box   w"]/div[@class="priceCont"]')  # as a parent
+    articleDescriptionsParents = parsers_common.xpath_to_list(pageTree, '//div[@class="product_camp_box   w"]/a/div/div[@class="leftC"]')  # as a parent
 
-    for i in range(0, min(len(articleUrls), maxArticleCount)):
+    for i in parsers_common.articleUrlsRange(articleDataDict["urls"]):
         # description
-        curArtDescParent = articleDescriptionsParents[i]
-        curArtDescriptionsChilds = parsers_common.stringify_children(curArtDescParent)
-        curArtPriceParent = articlePriceParents[i]
-        curArtPriceChilds = parsers_common.stringify_children(curArtPriceParent)
+        curArtPriceChilds = parsers_common.stringify_index_children(articlePriceParents, i)
+        curArtDescChilds = parsers_common.stringify_index_children(articleDescriptionsParents, i)
+        articleDataDict["descriptions"].append(curArtPriceChilds + curArtDescChilds)
 
-        articleDescriptions.append(curArtDescriptionsChilds + "<br>" + curArtPriceChilds)
-
-    return {"articleDescriptions": articleDescriptions,
-            "articleImages": articleImages,
-            "articlePubDates": articlePubDates,
-            "articleTitles": articleTitles,
-            "articleUrls": articleUrls,
-           }
+    return articleDataDict

@@ -9,53 +9,61 @@ import parsers_common
 import rss_print
 
 
-def getArticleListsFromHtml(pageTree, domain, maxArticleCount, getArticleBodies):
-    """
-    Meetod kõigi objektide nimekirja loomiseks
-    """
+def getArticleListsFromHtml(articleDataDict, pageTree, domain, maxArticleCount, getArticleBodies):
 
-    articleDescriptions = parsers_common.xpath(pageTree, '//main/div[1]/div/div/section[@class="card cf"]//h1/a/span/@title')
-    articleImages = parsers_common.xpath(pageTree, '//main/div[1]/div/div/section[@class="card cf"]//a/div/img/@scr')
-    articlePubDates = []
-    articleTitles = parsers_common.xpath(pageTree, '//main/div[1]/div/div/section[@class="card cf"]//h1/a/span/@title')
-    articleUrls = parsers_common.xpath(pageTree, '//main/div[1]/div/div/section[@class="card cf"]//h1/a/@href')
+    articleDataDict["images"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]//a/div/img/@scr')
+    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/h1/a/span/@title')
+    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/h1/a/@href')
+
+    articleDescriptions = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/h1/a/span/@title')
+    # articleDescTags = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/div/a/span[1]/@text()')
+
+    for i in parsers_common.articleUrlsRange(articleDataDict["urls"]):
+        # description
+        articleDataDict["descriptions"].append(articleDescriptions[i])
 
     # remove unwanted content
-    j = 0
-    while (j < min(len(articleUrls), maxArticleCount)):
-        rss_print.print_debug(__file__, "kontrollime kannet: " + str(j + 1) + ", kokku: " + str(len(articleUrls)), 3)
+    k = 0
+    while (k < min(len(articleDataDict["urls"]), maxArticleCount)):
+        rss_print.print_debug(__file__, "kontrollime kannet: " + str(k + 1) + ", kokku: " + str(len(articleDataDict["urls"])), 3)
         if (
-            articleTitles[j].find("(uus) raamat") >= 0 or
-            articleTitles[j].find("Abramova") >= 0 or
-            articleTitles[j].find("Bisweed") >= 0 or
-            articleTitles[j].find("ERROR!") >= 0 or
-            articleTitles[j].find("Floorshow") >= 0 or
-            articleTitles[j].find("Gnoom") >= 0 or
-            articleTitles[j].find("IDA Jutud") >= 0 or
-            articleTitles[j].find("Keskkonnatund") >= 0 or
-            articleTitles[j].find("Lunchbreak Lunchdate") >= 0 or
-            articleTitles[j].find("Muster") >= 0 or
-            articleTitles[j].find("Paneel") >= 0 or
-            articleTitles[j].find("Room_202") >= 0 or
-            articleTitles[j].find("Rõhk") >= 0 or
-            articleTitles[j].find("SAAL RAADIO") >= 0 or
-            articleTitles[j].find("Soojad suhted") >= 0 or
-            articleTitles[j].find("Vitamiin K") >= 0 or
-            articleTitles[j].find("Ära kaaguta!") >= 0
+            articleDataDict["titles"][k].find("(uus) raamat") >= 0 or
+            articleDataDict["titles"][k].find("Abramova") >= 0 or
+            articleDataDict["titles"][k].find("Based Broccoli") >= 0 or
+            articleDataDict["titles"][k].find("Bisweed") >= 0 or
+            articleDataDict["titles"][k].find("EKKM") >= 0 or
+            articleDataDict["titles"][k].find("ERROR!") >= 0 or
+            articleDataDict["titles"][k].find("Floorshow") >= 0 or
+            articleDataDict["titles"][k].find("Gnoom") >= 0 or
+            articleDataDict["titles"][k].find("Hillbilly Picnic") >= 0 or
+            articleDataDict["titles"][k].find("IDA Jutud") >= 0 or
+            articleDataDict["titles"][k].find("IDA Räpp") >= 0 or
+            articleDataDict["titles"][k].find("Keskkonnatund") >= 0 or
+            articleDataDict["titles"][k].find("Kink Konk") >= 0 or
+            articleDataDict["titles"][k].find("Korrosioon") >= 0 or
+            articleDataDict["titles"][k].find("Kräpp") >= 0 or
+            articleDataDict["titles"][k].find("Let Me Juke") >= 0 or
+            articleDataDict["titles"][k].find("Lunchbreak Lunchdate") >= 0 or
+            articleDataDict["titles"][k].find("Meie igapäevane avalik ruum") >= 0 or
+            articleDataDict["titles"][k].find("Muster") >= 0 or
+            articleDataDict["titles"][k].find("Müürilehe Hommik") >= 0 or
+            articleDataDict["titles"][k].find("Paneel") >= 0 or
+            articleDataDict["titles"][k].find("Playa Music") >= 0 or
+            articleDataDict["titles"][k].find("Propel") >= 0 or
+            articleDataDict["titles"][k].find("Puhkus") >= 0 or
+            articleDataDict["titles"][k].find("Room_202") >= 0 or
+            articleDataDict["titles"][k].find("Rõhk") >= 0 or
+            articleDataDict["titles"][k].find("SAAL RAADIO") >= 0 or
+            articleDataDict["titles"][k].find("Soojad Suhted") >= 0 or
+            articleDataDict["titles"][k].find("Soojad suhted") >= 0 or
+            articleDataDict["titles"][k].find("Triinemets & Co.") >= 0 or
+            articleDataDict["titles"][k].find("Vitamiin K") >= 0 or
+            articleDataDict["titles"][k].find("Zubrovka AM") >= 0 or
+            articleDataDict["titles"][k].find("Ära Kaaguta!") >= 0 or
+            articleDataDict["titles"][k].find("Ära kaaguta!") >= 0
         ):
-            rss_print.print_debug(__file__, "eemaldame halva sisu kande: " + articleTitles[j], 0)
-
-            articleDescriptions = parsers_common.del_if_set(articleDescriptions, j)
-            articleImages = parsers_common.del_if_set(articleImages, j)
-            articlePubDates = parsers_common.del_if_set(articlePubDates, j)
-            articleTitles = parsers_common.del_if_set(articleTitles, j)
-            articleUrls = parsers_common.del_if_set(articleUrls, j)
+            articleDataDict = parsers_common.del_article_dict_index(articleDataDict, k)
         else:
-            j += 1
+            k += 1
 
-    return {"articleDescriptions": articleDescriptions,
-            "articleImages": articleImages,
-            "articlePubDates": articlePubDates,
-            "articleTitles": articleTitles,
-            "articleUrls": articleUrls,
-           }
+    return articleDataDict
