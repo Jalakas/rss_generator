@@ -5,7 +5,7 @@
     Print
 """
 
-printDebugMessageLevel = 0
+PRINT_MESSAGE_LEVEL = 0
 
 
 def print_debug(curScript, curDebugMessage, curDebugMessageLevel=0):
@@ -13,5 +13,5 @@ def print_debug(curScript, curDebugMessage, curDebugMessageLevel=0):
     Prindib vastava taseme täiendatavat informatsiooni, kui seda soovitakse
     """
 
-    if (printDebugMessageLevel >= curDebugMessageLevel):
+    if (PRINT_MESSAGE_LEVEL >= curDebugMessageLevel):
         print(curScript.split("/")[-1] + ": " + str(curDebugMessage))

@@ -5,19 +5,20 @@
     HTML-i hankimine
 """
 
-from lxml import html
-import gzip
 import os
 import re
 import requests
+from lxml import html
 
+import parsers_common
 import rss_config
+import rss_disk
 import rss_print
 
-cacheMainArticleBodies = False
+CACHE_MAIN_ARTICLE_BODIES = False
 
 
-def getArticleData(articleUrl, mainPage=False):
+def get_article_data(articleUrl, mainPage=False):
     """
     Artikli lehe pärimine
     """
@@ -30,17 +31,17 @@ def getArticleData(articleUrl, mainPage=False):
     osCacheFolderDomain = osCacheFolder + '/' + cacheDomainFolder
     osCacheFolderDomainArticle = osCacheFolderDomain + '/' + cacheArticleUrl
 
-    if mainPage is True and cacheMainArticleBodies is False:
+    if mainPage is True and CACHE_MAIN_ARTICLE_BODIES is False:
         # põhilehekülg tuleb alati alla laadida Internetist, kui me pole devel režiimis
-        htmlPageBytes = makeReq(articleUrl)
+        htmlPageBytes = make_request(articleUrl)
 
         # salvestame alati kettale
-        writeFileToCacheFolder(osCacheFolder, osCacheFolderDomain, osCacheFolderDomainArticle, htmlPageBytes)
+        rss_disk.write_file_to_cache_folder(osCacheFolder, osCacheFolderDomain, osCacheFolderDomainArticle, htmlPageBytes)
     else:
         rss_print.print_debug(__file__, "hangitav leht: " + articleUrl, 1)
 
         # proovime kõigepealt hankida kettalt
-        htmlPageBytes = readFileFromCache(osCacheFolderDomainArticle)
+        htmlPageBytes = rss_disk.read_file_from_cache(osCacheFolderDomainArticle)
 
         if htmlPageBytes != "":
             rss_print.print_debug(__file__, "lugesime kettalt: " + osCacheFolderDomainArticle, 2)
@@ -48,65 +49,42 @@ def getArticleData(articleUrl, mainPage=False):
             rss_print.print_debug(__file__, "ei õnnestunud kettalt lugeda: " + osCacheFolderDomainArticle, 1)
 
             # teeme internetipäringu
-            htmlPageBytes = makeReq(articleUrl)
+            htmlPageBytes = make_request(articleUrl)
 
             # salvestame alati kettale
-            writeFileToCacheFolder(osCacheFolder, osCacheFolderDomain, osCacheFolderDomainArticle, htmlPageBytes)
+            rss_disk.write_file_to_cache_folder(osCacheFolder, osCacheFolderDomain, osCacheFolderDomainArticle, htmlPageBytes)
 
     # teeme html puu
     try:
         articleTree = html.fromstring(htmlPageBytes)
     except Exception as e:
         rss_print.print_debug(__file__, "ei õnnestunud luua html objekti leheküljest: " + articleUrl, 0)
-        rss_print.print_debug(__file__, "exception = " + str(e), 1)
+        rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
 
     return articleTree
 
 
-def fixBrokenUTF8asEncoding(brokenBytearray, encoding='iso8859_15'):  # 'iso8859_4', 'iso8859_15'
-    """
-    Imiteerime vigast 'UTF-8' sisu -> 'enkooding' formaati konverteerimist ja asendame nii leitud vigased sümbolid algsete sümbolitega
-    http://i18nqa.com/debug/UTF8-debug.html
-    """
-
-    curBytearray = brokenBytearray.decode(encoding, 'ignore')
-
-    for curInt in range(0x80, 383):  # ž on 382 ja selle juures lõpetame
-        byteUnicode = str(chr(curInt))
-
-        try:
-            byteUTF8inEncode = byteUnicode.encode('utf-8').decode(encoding)
-        except Exception:
-            rss_print.print_debug(__file__, "i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: pole sümbolit", 4)
-            continue
-
-        rss_print.print_debug(__file__, "i=" + str(hex(curInt)) + "\tbyteUnicode: " + str(byteUnicode) + "\t<-\tbyteUTF8inEncode: " + str(byteUTF8inEncode), 4)
-        curBytearray = curBytearray.replace(byteUTF8inEncode, byteUnicode)
-    curBytearray = curBytearray.replace('â', '"')
-    curBytearray = curBytearray.replace('â', '"')
-    curBytearray = curBytearray.replace('â', '–')
-    curBytearray = curBytearray.replace('â', '"')
-
-    return curBytearray.encode('utf-8')
-
-
-def makeReq(articleUrl):
+def make_request(articleUrl):
     """
     Päringu teostamine HTML-i allalaadimiseks
     """
-
-    rss_print.print_debug(__file__, "teeme internetipäringu lehele: " + articleUrl, 0)
-
-    session = requests.session()
-    htmlPage = session.get(articleUrl, headers=rss_config.headers)
-    htmlPageBytes = htmlPage.content
+    # teeme päringu
+    try:
+        rss_print.print_debug(__file__, "teeme internetipäringu lehele: " + articleUrl, 0)
+        session = requests.session()
+        htmlPage = session.get(articleUrl, headers=rss_config.HEADERS, timeout=10)
+        htmlPageBytes = htmlPage.content
+    except Exception as e:
+        rss_print.print_debug(__file__, "päring ebaõnnestus, tagastame tühja vastuse", 0)
+        rss_print.print_debug(__file__, "exception = " + str(e), 0)
+        htmlPageBytes = bytes("", encoding='utf-8')
 
     # kontrollime kodeeringut
     try:
         htmlPageString = htmlPageBytes.decode("utf-8")
-    except Exception:
-        rss_print.print_debug(__file__, "parandame ebaõnnestunud 'UTF-8' as 'iso8859_15' kodeeringu veebilehel: " + articleUrl, 0)
-        htmlPageString = fixBrokenUTF8asEncoding(htmlPageBytes, 'iso8859_15')
+    except Exception as e:
+        rss_print.print_debug(__file__, "exception = " + str(e), 0)
+        htmlPageString = parsers_common.fix_broken_utf8_as_encoding(htmlPageBytes, 'iso8859_15')
 
     # remove style
     htmlPageString = re.sub(r"<style[\s\S]*?<\/style>", "", htmlPageString)
@@ -122,52 +100,3 @@ def makeReq(articleUrl):
 
     htmlPageBytes = bytes(htmlPageString, encoding='utf-8')
     return htmlPageBytes
-
-
-def readFileFromCache(osCacheFolderDomainArticle):
-    try:
-        with gzip.open(osCacheFolderDomainArticle, 'rb') as cacheReadFile:
-            htmlPageBytes = cacheReadFile.read()
-            return htmlPageBytes
-    except Exception as e:
-        rss_print.print_debug(__file__, "exception = " + str(e), 2)
-        # pakitud faili ei leidnud, proovime tavalist
-        try:
-            with open(osCacheFolderDomainArticle, 'rb') as cacheReadFile:
-                htmlPageBytes = cacheReadFile.read()
-                return htmlPageBytes
-        except Exception as e:
-            rss_print.print_debug(__file__, "exception = " + str(e), 3)
-            return ""
-
-
-def recursively_empty(e):
-    if e.text:
-        return False
-    return all((recursively_empty(c) for c in e.iterchildren()))
-
-
-def writeFileAsGzip(filePath, htmlPageBytes):
-    with gzip.open(filePath, 'wb') as cacheWriteFile:
-        rss_print.print_debug(__file__, "salvestame kettale faili: " + filePath, 3)
-        cacheWriteFile.write(htmlPageBytes)
-        cacheWriteFile.close()
-        uid = os.environ.get('SUDO_UID')
-        gid = os.environ.get('SUDO_GID')
-        if uid is not None:
-            os.chown(filePath, int(uid), int(gid))
-
-
-def writeFileToCacheFolder(osCacheFolder, osCacheFolderDomain, osCacheFolderDomainArticle, htmlPageBytes):
-    if not os.path.exists(osCacheFolder):
-        rss_print.print_debug(__file__, "loome puuduva kausta: " + osCacheFolder, 0)
-        os.makedirs(osCacheFolder)
-    if not os.path.exists(osCacheFolderDomain):
-        rss_print.print_debug(__file__, "loome puuduva kausta: " + osCacheFolderDomain, 0)
-        os.makedirs(osCacheFolderDomain)
-    try:
-        writeFileAsGzip(osCacheFolderDomainArticle, htmlPageBytes)
-        rss_print.print_debug(__file__, "fail õnnestus kettale salvestada: " + osCacheFolderDomainArticle, 2)
-    except Exception as e:
-        rss_print.print_debug(__file__, "faili ei õnnestunud kettale salvestada: " + osCacheFolderDomainArticle, 0)
-        rss_print.print_debug(__file__, "exception = " + str(e), 1)

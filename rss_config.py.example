@@ -5,10 +5,12 @@
     Privaatsed seadistused
 """
 
-host_url = 'http://your.url/'
-upload_url = host_url + 'script.php'
-upload_name = 'filename'
+LOCAL_USERNAME = "username"
 
-headers = {
+HOST_URL = 'http://your.url/'
+UPLOAD_URL = HOST_URL + 'script.php'
+UPLOAD_NAME = 'filename'
+
+HEADERS = {
     'Accept-Encoding': 'gzip, deflate, compress',
     'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:66.0) Gecko/20100101 Firefox/66.0', }
