@@ -7,7 +7,6 @@
 
 import os
 import re
-import requests
 from lxml import html
 
 import parsers_common
@@ -18,7 +17,7 @@ import rss_print
 CACHE_MAIN_ARTICLE_BODIES = False
 
 
-def get_article_data(articleUrl, mainPage=False):
+def get_article_data(session, articleUrl, mainPage=False):
     """
     Artikli lehe pärimine
     """
@@ -33,7 +32,7 @@ def get_article_data(articleUrl, mainPage=False):
 
     if mainPage is True and CACHE_MAIN_ARTICLE_BODIES is False:
         # põhilehekülg tuleb alati alla laadida Internetist, kui me pole devel režiimis
-        htmlPageBytes = make_request(articleUrl)
+        htmlPageBytes = make_request(session, articleUrl)
 
         # salvestame alati kettale
         rss_disk.write_file_to_cache_folder(osCacheFolder, osCacheFolderDomain, osCacheFolderDomainArticle, htmlPageBytes)
@@ -49,7 +48,7 @@ def get_article_data(articleUrl, mainPage=False):
             rss_print.print_debug(__file__, "ei õnnestunud kettalt lugeda: " + osCacheFolderDomainArticle, 1)
 
             # teeme internetipäringu
-            htmlPageBytes = make_request(articleUrl)
+            htmlPageBytes = make_request(session, articleUrl)
 
             # salvestame alati kettale
             rss_disk.write_file_to_cache_folder(osCacheFolder, osCacheFolderDomain, osCacheFolderDomainArticle, htmlPageBytes)
@@ -64,26 +63,25 @@ def get_article_data(articleUrl, mainPage=False):
     return articleTree
 
 
-def make_request(articleUrl):
+def make_request(session, articleUrl):
     """
     Päringu teostamine HTML-i allalaadimiseks
     """
-    # teeme päringu
+
+    rss_print.print_debug(__file__, "teeme internetipäringu lehele: " + articleUrl, 0)
     try:
-        rss_print.print_debug(__file__, "teeme internetipäringu lehele: " + articleUrl, 0)
-        session = requests.session()
         htmlPage = session.get(articleUrl, headers=rss_config.HEADERS, timeout=10)
         htmlPageBytes = htmlPage.content
     except Exception as e:
         rss_print.print_debug(__file__, "päring ebaõnnestus, tagastame tühja vastuse", 0)
-        rss_print.print_debug(__file__, "exception = " + str(e), 0)
+        rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
         htmlPageBytes = bytes("", encoding='utf-8')
 
     # kontrollime kodeeringut
     try:
         htmlPageString = htmlPageBytes.decode("utf-8")
     except Exception as e:
-        rss_print.print_debug(__file__, "exception = " + str(e), 0)
+        rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
         htmlPageString = parsers_common.fix_broken_utf8_as_encoding(htmlPageBytes, 'iso8859_15')
 
     # remove style

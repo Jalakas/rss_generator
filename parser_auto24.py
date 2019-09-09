@@ -5,20 +5,20 @@ import parsers_common
 import rss_print
 
 
-def article_dict(articleDataDict, pageTree, domain, maxArticleBodies, getArticleBodies):
+def fill_article_dict(articleDataDict, pageTree, domain, session):
 
     articleDataDict["authors"] = parsers_common.xpath_to_list(pageTree, '/html/body/div/div/div[@class="section messages"]/div[@class="message"]/div[@class="name"]//text()[1]')
+    articleDataDict["descriptions"] = parsers_common.xpath_to_list(pageTree, '/html/body/div/div/div[@class="section messages"]/div[@class="message"]/div[@class="content"]', parent=True)
     articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '/html/body/div/div/div[@class="section messages"]/div[@class="message"]/div[@class="posttime"]/text()')
     articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '/html/body/div/div/div[@class="section messages"]/div[@class="message"]/div[@class="title"]/a[3]/text()')
     articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '/html/body/div/div/div[@class="section messages"]/div[@class="message"]/div[@class="title"]/a[3]/@href')
 
-    articleDescParents = parsers_common.xpath_to_list(pageTree, '/html/body/div/div/div[@class="section messages"]/div[@class="message"]/div[@class="content"]', parent=True)
-
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # description
-        curArtDescChilds = parsers_common.stringify_index_children(articleDescParents, i)
-        curArtDescChilds = curArtDescChilds.split('<div class="userControls')[0]
-        articleDataDict["descriptions"].append(curArtDescChilds)
+        curArtDesc = articleDataDict["descriptions"][i]
+        curArtDesc = curArtDesc.split('<div class="userControls')[0]
+        curArtDesc = parsers_common.fix_drunk_post(curArtDesc)
+        articleDataDict["descriptions"][i] = curArtDesc
 
         # title
         articleDataDict["titles"][i] = articleDataDict["titles"][i] + " @auto24.ee"

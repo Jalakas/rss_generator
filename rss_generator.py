@@ -29,7 +29,6 @@ import parser_nelli  # noqa F401
 import parser_nommeraadio  # noqa F401
 import parser_osta  # noqa F401
 import parser_phpbb  # noqa F401
-import parser_phpbb2  # noqa F401
 import parser_postimees  # noqa F401
 import parser_ra  # noqa F401
 import parser_raadioteater  # noqa F401
@@ -37,10 +36,6 @@ import parser_stokker  # noqa F401
 import parser_tartuekspress  # noqa F401
 import parser_tootukassa  # noqa F401
 import parser_trm  # noqa F401
-
-# definitions
-MAX_ARTICLE_BODIES = 200
-GER_ARTICLE_BODIES = True
 
 OS_PATH = os.path.dirname(os.path.abspath(__file__))
 LATEST_FEEDS_PATH = OS_PATH + '/' + 'latest_feeds'
@@ -50,32 +45,32 @@ RSS_DEFS = []
 RSS_TO_GENERATE = []
 
 #                 parser,              name,               title,              description            domain                                  domain_rss (optional)
-RSS_DEFS.append(['auto24',            'auto24',           'Auto24',           'foorum',               '',                                     'https://www.auto24.ee/foorum/foorum.php?last_messages=1'])  # noqa E241
-RSS_DEFS.append(['avalikteenistus',   'avalikteenistus',  'Avalik teenistus', 'töökohad',             'http://www.rahandusministeerium.ee',   'http://www.rahandusministeerium.ee/et/avalikud-konkursid?page=' + str(random.randint(1, 12))])  # noqa E241
+RSS_DEFS.append(['auto24',            'auto24',           'Auto24',           'foorum',               '',                                     'http://www.auto24.ee/foorum/foorum.php?last_messages=1'])  # noqa E241
+RSS_DEFS.append(['avalikteenistus',   'avalikteenistus',  'Avalik teenistus', 'töökohad',             'http://www.rahandusministeerium.ee',   'http://www.rahandusministeerium.ee/et/avalikud-konkursid?page=' + str(random.randint(1, 10))])  # noqa E241
 RSS_DEFS.append(['bns',               'bns',              'BNS',              'uudised',              'http://bns.ee',                        ''])  # noqa E241
-RSS_DEFS.append(['err',               'err',              'ERR',              'videoarhiiv',          'http://arhiiv.err.ee',                 'https://arhiiv.err.ee/viimati-lisatud/err-videoarhiiv/koik'])  # noqa E241
+RSS_DEFS.append(['err',               'err',              'ERR',              'videoarhiiv',          'http://arhiiv.err.ee',                 'http://arhiiv.err.ee/viimati-lisatud/err-videoarhiiv/koik'])  # noqa E241
 RSS_DEFS.append(['geopeitus',         'geopeitus',        'Geopeitus',        '"Tartu" aarded',       'http://www.geopeitus.ee',              ''])  # noqa E241
 RSS_DEFS.append(['hv',                'hv',               'Hinnavaatlus',     'uudised',              'http://www.hinnavaatlus.ee',           'http://www.hinnavaatlus.ee/#news'])  # noqa E241
 RSS_DEFS.append(['kultuuriaken',      'kultuuriaken',     'Kultuuriaken',     'sündmused',            'http://kultuuriaken.tartu.ee',         'http://kultuuriaken.tartu.ee/et/syndmused'])  # noqa E241
 RSS_DEFS.append(['lhv',               'lhv',              'LHV',              'foorumipostitused',    'https://fp.lhv.ee',                    'https://fp.lhv.ee/forum/free'])  # noqa E241
-RSS_DEFS.append(['mixcloud',          'idaraadio',        'IDA_RAADIO ',      '@mixcloud',            'https://www.mixcloud.com',             'http://www.mixcloud.com/IDA_RAADIO/uploads/?order=latest'])  # noqa E241
-RSS_DEFS.append(['mixcloud',          'paranoidtxt',      'paranoidtxt ',     '@mixcloud',            'https://www.mixcloud.com',             'http://www.mixcloud.com/paranoidtxt/uploads/?order=latest'])  # noqa E241
-RSS_DEFS.append(['mixcloud',          'rhythmdr',         'rhythmdr ',        '@mixcloud',            'https://www.mixcloud.com',             'http://www.mixcloud.com/rhythmdr/uploads/?order=latest'])  # noqa E241
+RSS_DEFS.append(['mixcloud',          'idaraadio',        'IDA_RAADIO ',      '@mixcloud',            'http://www.mixcloud.com',              'http://www.mixcloud.com/IDA_RAADIO/uploads/?order=latest'])  # noqa E241
+RSS_DEFS.append(['mixcloud',          'paranoidtxt',      'paranoidtxt ',     '@mixcloud',            'http://www.mixcloud.com',              'http://www.mixcloud.com/paranoidtxt/uploads/?order=latest'])  # noqa E241
+RSS_DEFS.append(['mixcloud',          'rhythmdr',         'rhythmdr ',        '@mixcloud',            'http://www.mixcloud.com',              'http://www.mixcloud.com/rhythmdr/uploads/?order=latest'])  # noqa E241
 RSS_DEFS.append(['nelli',             'nelli',            'Nelli Teataja',    'uudised',              'http://www.nelli.ee',                  'http://www.nelli.ee/elu'])  # noqa E241
 RSS_DEFS.append(['nommeraadio',       'nommeraadio',      'Nõmme Raadio',     'uudised',              'http://www.nommeraadio.ee',            ''])  # noqa E241
-RSS_DEFS.append(['osta',              'ostaee',           'otsa.ee',          'pakkumised',           'https://www.osta.ee',                  'http://www.osta.ee/index.php?fuseaction=search.search&orderby=enda&q[cat]=1397&q[location]=Tartu&start=' + str(random.randint(0, 25)*60)])  # noqa E241
+RSS_DEFS.append(['osta',              'ostaee',           'otsa.ee',          'pakkumised',           'http://www.osta.ee',                   'http://www.osta.ee/index.php?fuseaction=search.search&orderby=enda&q[cat]=1397&q[location]=Tartu&start=' + str(random.randint(0, 25)*60)])  # noqa E241
 RSS_DEFS.append(['phpbb',             'arutelud',         'Arutelud',         'foorumipostitused',    'http://arutelud.com',                  'http://arutelud.com/search.php?search_id=active_topics'])  # noqa E241
 RSS_DEFS.append(['phpbb',             'cbfoorum',         'CB foorum',        'foorumipostitused',    'http://foorum.cbradio.ee',             'http://foorum.cbradio.ee/search.php?search_id=active_topics'])  # noqa E241
 RSS_DEFS.append(['phpbb',             'isikee',           'isik.ee',          'foorumipostitused',    'http://www.isik.ee/foorum',            'http://www.isik.ee/foorum/search.php?search_id=active_topics'])  # noqa E241
-RSS_DEFS.append(['phpbb2',            'militaarnet',      'militaar.net',     'foorumipostitused',    'http://www.militaar.net/phpBB2',       'http://www.militaar.net/phpBB2/search.php?search_id=active_topics'])  # noqa E241
+RSS_DEFS.append(['phpbb',             'militaarnet',      'militaar.net',     'foorumipostitused',    'http://www.militaar.net/phpBB2',       'http://www.militaar.net/phpBB2/search.php?search_id=active_topics'])  # noqa E241
 RSS_DEFS.append(['postimees',         'jt',               'Järva Teataja',    'uudised',              'http://jarvateataja.postimees.ee',     'http://jarvateataja.postimees.ee/search'])  # noqa E241
 RSS_DEFS.append(['postimees',         'pohjarannik',      'Põhjarannik',      'uudised',              'http://pohjarannik.postimees.ee',      'http://pohjarannik.postimees.ee/search'])  # noqa E241
 RSS_DEFS.append(['postimees',         'tartupostimees',   'Tartu Postimees',  'uudised',              'http://tartu.postimees.ee',            'http://tartu.postimees.ee/search'])  # noqa E241
 RSS_DEFS.append(['ra',                'ra',               'Rahvusarhiiv',     'uudised',              'http://www.ra.ee',                     'http://www.ra.ee/uudised'])  # noqa E241
 RSS_DEFS.append(['raadioteater',      'kuuldemangud',     'Raadioteater',     'kuuldemängud',         'http://raadioteater.err.ee',           'http://raadioteater.err.ee/raadioteater/kuuldemaengarhiiv'])  # noqa E241
-RSS_DEFS.append(['stokker',           'stokker',          'Stokker',          'outlet pakkumised',    'http://www.stokker.ee',                'http://www.stokker.ee/kampaaniad/tooriistade-outlet?page=' + str(random.randint(1, 15)) + '&limit=' + str(MAX_ARTICLE_BODIES) + '&instorage=1'])  # noqa E241
+RSS_DEFS.append(['stokker',           'stokker',          'Stokker',          'outlet pakkumised',    'http://www.stokker.ee',                'http://www.stokker.ee/kampaaniad/tooriistade-outlet?page=' + str(random.randint(1, 15)) + '&limit=' + str(rss_config.MAX_ARTICLE_BODIES) + '&instorage=1'])  # noqa E241
 RSS_DEFS.append(['tartuekspress',     'tartuekspress',    'Tartu Ekspress',   'uudised',              'http://tartuekspress.ee',              'http://tartuekspress.ee/index.php?page=20&type=3'])  # noqa E241
-RSS_DEFS.append(['tootukassa',        'tootukassa',       'Töötukassa',       'tööpakkumised',        'http://www.tootukassa.ee',             'https://www.tootukassa.ee/toopakkumised?asukohad%5B%5D=EE%2F79&asukohad%5B%5D=EE%2F52&haridustase%5Bmin%5D=KUTSEKORGHARIDUS&haridustase%5Bmax%5D=MAGISTRIOPE'])  # noqa E241
+RSS_DEFS.append(['tootukassa',        'tootukassa',       'Töötukassa',       'tööpakkumised',        'http://www.tootukassa.ee',             'http://www.tootukassa.ee/toopakkumised?asukohad%5B%5D=EE%2F79&asukohad%5B%5D=EE%2F52&haridustase%5Bmin%5D=KUTSEKORGHARIDUS&haridustase%5Bmax%5D=MAGISTRIOPE'])  # noqa E241
 RSS_DEFS.append(['trm',               'tooriistamarket',  'Tööriistamarket',  'head pakkumised',      'http://www.tooriistamarket.ee',        'http://www.tooriistamarket.ee/et/head-pakkumised?price=1&page=' + str(random.randint(0, 20))])  # noqa E241
 
 # user input
@@ -122,36 +117,38 @@ if not os.path.exists(LATEST_FEEDS_PATH):
 if not os.path.exists(OLDER_FEEDS_PATH):
     os.makedirs(OLDER_FEEDS_PATH)
 
+# make new session
+SESSION = requests.session()
+
 # generate all feeds
 for curRSS in RSS_TO_GENERATE:
-
     curParser = sys.modules['parser_' + RSS_DEFS[curRSS][0]]
     curName = RSS_DEFS[curRSS][1]
     curTitle = RSS_DEFS[curRSS][2]
     curDescription = RSS_DEFS[curRSS][2] + " - " + RSS_DEFS[curRSS][3]
-    curDomain = curDomainRSS = RSS_DEFS[curRSS][4].replace('//', '/').replace('https:/', 'https://').replace('http:/', 'http://')
+    curDomainShort = curDomainLong = RSS_DEFS[curRSS][4].replace('//', '/').replace('https:/', 'https://').replace('http:/', 'http://')
     if len(RSS_DEFS[curRSS]) > 4 and RSS_DEFS[curRSS][5]:
-        curDomainRSS = RSS_DEFS[curRSS][5]
+        curDomainLong = RSS_DEFS[curRSS][5]
 
+    # preparations
     curFilename = curName + '.rss'
     curFilenameFull = LATEST_FEEDS_PATH + '/' + curFilename
     destFilenameFull = OLDER_FEEDS_PATH + '/' + curFilename
+    articleDataDictEmpty = {"authors": [], "descriptions": [], "images": [], "pubDates": [], "titles": [], "urls": []}
 
     # load page into tree
     try:
-        rss_print.print_debug(__file__, "pärime lehe: " + curDomainRSS, 2)
-        pageHtmlTree = rss_makereq.get_article_data(curDomainRSS, mainPage=True)
+        rss_print.print_debug(__file__, "pärime lehe: " + curDomainLong, 2)
+        pageHtmlTree = parsers_common.get_article_data(SESSION, curDomainShort, curDomainLong, mainPage=True)
         rss_print.print_debug(__file__, parsers_common.elemtree_to_string(pageHtmlTree), 5)
     except Exception as e:
-        rss_print.print_debug(__file__, "Viga! Ei suutnud andmeid pärida leheküljelt: " + curDomainRSS, 0)
+        rss_print.print_debug(__file__, "ei suutnud andmeid pärida leheküljelt: " + curDomainLong, 0)
         rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
         continue
 
     # get all content from page
-    rss_print.print_debug(__file__, "alustame sisu parsimist: " + str(curDomainRSS), 2)
-    articleDataDictEmpty = {"authors": [], "descriptions": [], "images": [], "pubDates": [], "titles": [], "urls": []}
-    articleDataDict = curParser.article_dict(articleDataDictEmpty, pageHtmlTree, curDomain, MAX_ARTICLE_BODIES, GER_ARTICLE_BODIES)
-
+    rss_print.print_debug(__file__, "alustame sisu töötlemist: " + str(curDomainLong), 2)
+    articleDataDict = curParser.fill_article_dict(articleDataDictEmpty, pageHtmlTree, curDomainShort, SESSION)
     rss_print.print_debug(__file__, "articleDataDict = " + str(articleDataDict), 4)
 
     lastValueCount = 0
@@ -174,8 +171,8 @@ for curRSS in RSS_TO_GENERATE:
         lastValueName = curValueName
 
     # combine rss file
-    rss_print.print_debug(__file__, "koostame rss-i: " + curDomainRSS, 2)
-    rss_content = rss_maker.rssmaker(articleDataDict, curTitle, curDomain, curDomainRSS, curDescription, rss_config.HOST_URL + "/" + curFilename)
+    rss_print.print_debug(__file__, "koostame rss-i: " + curDomainLong, 2)
+    rss_content = rss_maker.rssmaker(articleDataDict, curTitle, curDomainShort, curDomainLong, curDescription, rss_config.HOST_URL + "/" + curFilename)
 
     # move away old feed, if there is any
     try:

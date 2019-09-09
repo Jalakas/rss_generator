@@ -5,10 +5,10 @@ import parsers_common
 import rss_print
 
 
-def article_dict(articleDataDict, pageTree, domain, maxArticleBodies, getArticleBodies):
+def fill_article_dict(articleDataDict, pageTree, domain, session):
 
     articleDataDict["descriptions"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/h1/a/span/@title')
-    articleDataDict["images"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]//a/div/img/@scr')
+    articleDataDict["images"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/a[@class="album-art"]/div[@class="album-artwork"]/img/@scr')
     articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/h1/a/span/@title')
     articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/h1/a/@href')
 

@@ -86,7 +86,9 @@ def domain_urls(domain, urls):
 
 
 def elemtree_to_string(elemTree):
-    return fix_post_spaces(str(lxml.html.tostring(elemTree)))
+    curString = str(lxml.html.tostring(elemTree))
+    curString = fix_string_spaces(curString)
+    return curString
 
 
 def fix_broken_utf8_as_encoding(brokenBytearray, encoding='iso8859_15'):  # 'iso8859_4', 'iso8859_15'
@@ -138,9 +140,9 @@ def fix_drunk_post(drunkPostString):
 
     drunkPostString = drunkPostString.replace("  ", " ")
     drunkPostString = re.sub(r"\.(?=[A-Z])", ". ", drunkPostString)  # fix: space after dot
-    drunkPostString = drunkPostString.replace('" .', '".').replace(' ".', '".')
     drunkPostString = drunkPostString.replace(" ... ", "...").replace(" ..", ". ").replace(". .", ". ").replace(" .", ". ")
     drunkPostString = drunkPostString.replace(".... ", "... ").replace(".. ", ". ").replace(".. ", "... ")  # to remove '.. ', and keep '... '
+    drunkPostString = drunkPostString.replace('" .', '".').replace(' ".', '".')
     drunkPostString = drunkPostString.replace(".<", ". <").replace(". </", ".</")
     drunkPostString = drunkPostString.replace(".(", ". (")
 
@@ -157,6 +159,8 @@ def fix_drunk_post(drunkPostString):
     drunkPostString = drunkPostString.replace(" !", "! ")
 
     drunkPostString = drunkPostString.replace(" ( ", " (").replace("( ", " (")
+
+    drunkPostString = drunkPostString.replace(")))", ")").replace("))", ")")
     drunkPostString = drunkPostString.replace(" ) ", ") ").replace(" )", ") ")
     drunkPostString = drunkPostString.replace(" ).", "). ").replace(") . ", "). ")
     drunkPostString = drunkPostString.replace(" ),", "), ").replace(") ,", "), ")
@@ -167,7 +171,7 @@ def fix_drunk_post(drunkPostString):
     return drunkPostString
 
 
-def fix_post_spaces(inpString):
+def fix_string_spaces(inpString):
     """
     Tagastab formaatimata teksti
     Sisend utf-8 kujul inpString
@@ -175,7 +179,6 @@ def fix_post_spaces(inpString):
 
     inpString = inpString.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ')
     inpString = " ".join(inpString.split())
-    inpString = inpString.strip()
 
     return inpString
 
@@ -265,11 +268,11 @@ def format_tags(htmlString, searchTagStart, searchTagEnd, addedTagStart, addedTa
     return htmlString
 
 
-def get_article_data(domain, articleUrl, mainPage=False):
+def get_article_data(session, domain, articleUrl, mainPage=False):
     if (articleUrl.find('http', 0, 4) == -1):
         rss_print.print_debug(__file__, "lingist ei leitud http-d: " + str(articleUrl), 3)
         articleUrl = domain_url(domain, articleUrl)
-    return rss_makereq.get_article_data(articleUrl, mainPage)
+    return rss_makereq.get_article_data(session, articleUrl, mainPage)
 
 
 def html_to_string(htmlNode, pageTreeEcoding='utf-8'):
@@ -291,6 +294,7 @@ def lstrip_string(inpString, stripString):
     if (stripString == ""):
         rss_print.print_debug(__file__, "sisend tühi, katkestame: stripString = '" + str(stripString) + "'", 0)
         return inpString
+
     lenStripString = len(stripString)
     while (inpString.find(stripString) == 0):
         rss_print.print_debug(__file__, "eemaldasime algusest stringi: '" + str(stripString) + "'", 4)
@@ -305,6 +309,7 @@ def rstrip_string(inpString, stripString):
     if (stripString == ""):
         rss_print.print_debug(__file__, "sisend tühi, katkestame: stripString = '" + str(stripString) + "'", 0)
         return inpString
+
     lenStripString = len(stripString)
     while (inpString.find(stripString) == len(inpString) - lenStripString):
         rss_print.print_debug(__file__, "eemaldasime lõpust stringi '" + str(stripString) + "': " + str(inpString), 4)
@@ -361,8 +366,8 @@ def raw_to_float(rawDateTimeText, rawDateTimeSyntax):
     if (curDateTimeText == ""):
         rss_print.print_debug(__file__, "ajasisend tühi: curDateTimeText = '" + curDateTimeText + "'", 0)
         return 0
+
     datetimeStruct = time.strptime(curDateTimeText, rawDateTimeSyntax)
-    rss_print.print_debug(__file__, "datetimeStruct = " + str(datetimeStruct), 4)
     datetimeList = list(datetimeStruct)
 
     if datetimeList[0] == 1900:
@@ -375,7 +380,6 @@ def raw_to_float(rawDateTimeText, rawDateTimeSyntax):
 
     datetimeTuple = tuple(datetimeList)
     datetimeFloat = time.mktime(datetimeTuple)
-    rss_print.print_debug(__file__, "datetimeFloat = '" + str(datetimeFloat) + "'", 5)
     return datetimeFloat
 
 
@@ -417,6 +421,7 @@ def stringify_index_children(sourceList, index, pageTreeEcoding='utf-8'):
 
     node = sourceList[index]
     nodeChilds = stringify_children(node, pageTreeEcoding='utf-8')
+
     return nodeChilds
 
 
@@ -440,19 +445,25 @@ def stringify_children(node, pageTreeEcoding='utf-8'):
             rss_print.print_debug(__file__, "osakontroll2: (if not getattr(node, 'text', None):)", 4)
             rss_print.print_debug(__file__, "pole otsitavat parentit (node-s puudub attr. 'text'), tagastame tühja sisu", 3)
             return ""
+    if isinstance(node, str):
+        rss_print.print_debug(__file__, "stringify_children() sisend on string, ehk juba töödeldud?, katkestame töötluse", 0)
+        return node
 
     node.attrib.clear()
-    tagOpening = len(node.tag) + 2
-    tagClosing = -(len(node.tag) + 3)
-    ret = html.tostring(node, encoding=pageTreeEcoding)[tagOpening:tagClosing]
+    tagLen = len(node.tag)  # len(b) = 1
+    tagOpening = tagLen + 2  # <b> = 1 + 2
+    tagClosing = -(tagLen + 2 + 1)  # <b/> = 1 + 3
+    retString = html.tostring(node, encoding=pageTreeEcoding)[tagOpening:tagClosing]
+
     try:
-        ret = ret.decode(pageTreeEcoding)
+        retString = retString.decode(pageTreeEcoding)
     except Exception as e:
         rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
-        ret = fix_broken_utf8_as_encoding(ret, 'iso8859_15')
-        ret = ret.decode(pageTreeEcoding)
-    ret = to_plaintext(ret)
-    return ret
+        retString = fix_broken_utf8_as_encoding(retString, 'iso8859_15')
+        retString = retString.decode(pageTreeEcoding)
+
+    retString = to_plaintext(retString)
+    return retString
 
 
 def to_plaintext(rawText):
@@ -461,9 +472,9 @@ def to_plaintext(rawText):
     Sisend utf-8 kujul rawText
     """
 
-    rawText = rawText.replace('<strong>', '<br><strong>').replace('</td>', '</td> ').replace('</p>', '</p> ')
+    retString = rawText.replace('<strong>', '<br><strong>').replace('</td>', '</td> ').replace('</p>', '</p> ')
+    retString = fix_string_spaces(retString)
 
-    retString = fix_post_spaces(rawText)
     return retString
 
 
@@ -521,11 +532,24 @@ def xpath_to_list(pageTree, xpathString, parent=False):
 
     elements = pageTree.xpath(xpathString)
 
-    # if (parent is True):
-        # for i in range(len(elements)):
-            # elements[i] = stringify_index_children(elements, i)
+    if (parent is True):
+        rss_print.print_debug(__file__, "laseme nimekirja läbi funktsiooni stringify_index_children", 3)
+    for i in range(len(elements)):
+        # enne hangimine, kui vaja
+        if (parent is True):
+            elements[i] = stringify_index_children(elements, i)
+        # ja siis ühine stripp
+        elements[i] = elements[i].strip()
+
+    if not elements:
+        rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtuste pikkus: " + str(len(elements)), 0)
+    elif len(elements) > 1:
+        rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtuste pikkus: " + str(len(elements)), 4)
+    else:
+        rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtuste pikkus: " + str(len(elements)), 1)
 
     rss_print.print_debug(__file__, "tagastame xpathi: '" + xpathString + "' väärtused: elements = " + str(elements), 3)
+
     return elements
 
 
@@ -536,14 +560,16 @@ def xpath_to_list_devel(pageTree, xpathString, parent=False):
 
     while(True):
         elements = pageTree.xpath(xpathString)
-        if elements > 0:
+
+        if elements:
             rss_print.print_debug(__file__, "xpath-i " + str(len(elements)) + " stringi leitud: " + xpathString, 0)
-            rss_print.print_debug(__file__, "elements: " + str(elements), 2)
+            rss_print.print_debug(__file__, "elements: " + str(elements), 3)
             return elements
 
         rss_print.print_debug(__file__, "xpath-i stringile ei leitud vasteid: " + xpathString, 0)
-        if len(xpathString.split("/")) < 3:
-            rss_print.print_debug(__file__, "xpath-i ei anna lühendada: " + xpathString, 0)
+
+        if len(xpathString.split("/")) <= 3:
+            rss_print.print_debug(__file__, "xpath-i ei anna enam lühendada: " + xpathString, 0)
             return elements
 
         rss_print.print_debug(__file__, "xpath-i lühendamine algusest: " + xpathString, 0)
@@ -563,10 +589,10 @@ def xpath_to_single(pageTree, xpathString, parent=False, combine=False):
         element = stringify_children(element)
 
     if not element:
-        rss_print.print_debug(__file__, "xpathi: '" + xpathString + "' väärtuse pikkus: " + str(len(element)), 2)
+        rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtuse pikkus: " + str(len(element)), 2)
         element = ""
     elif len(element) > 1:
-        rss_print.print_debug(__file__, "xpathi: '" + xpathString + "' väärtuse pikkus: " + str(len(element)), 4)
+        rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtuse pikkus: " + str(len(element)), 4)
 
     rss_print.print_debug(__file__, "tagastame xpathi: '" + xpathString + "' väärtuse: '" + str(element) + "'", 3)
     return element

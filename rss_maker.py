@@ -41,9 +41,6 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
     ttl = etree.SubElement(channel, "ttl")
     ttl.text = str(60)
 
-    if not dataset["urls"]:
-        rss_print.print_debug(__file__, "ei leitud ühtegi url-i lingilt: " + str(linkText), 0)
-
     for i in range(0, len(dataset["urls"])):
         item = etree.SubElement(channel, "item")
 
@@ -52,7 +49,7 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
             itemLink = etree.SubElement(item, "link")
 
             curValue = list(dataset["urls"])[i]
-            curValue = curValue.strip().rstrip("/")
+            curValue = curValue.rstrip("/")
 
             if (curValue.find('http', 0, 4) == -1):
                 rss_print.print_debug(__file__, "lingist ei leitud http-d: " + str(curValue), 3)
@@ -126,22 +123,21 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
             if postTimeFloat <= 1:
                 rss_print.print_debug(__file__, "posti: '" + itemTitle.text + "' aeg: '" + str(curValue) + "' on eelajalooline!, asendame hetkeajaga", 0)
                 curValue = parsers_common.float_to_datetime(curTimeFloat, curTimeFormat)
-                itemPubdate.text = curValue.strip()
+                itemPubdate.text = curValue
             elif postTimeFloat < postTimeFloatLimit:
                 rss_print.print_debug(__file__, "posti: '" + itemTitle.text + "' aeg: '" + str(curValue) + "' on vanem kui 31 päeva, eemaldame kande", 2)
                 channel.remove(item)
             elif postTimeFloat > curTimeFloat:
                 rss_print.print_debug(__file__, "posti: '" + itemTitle.text + "' aeg: '" + str(curValue) + "' on tulevikust?", 0)
-                itemPubdate.text = curValue.strip()
+                itemPubdate.text = curValue
             else:
-                itemPubdate.text = curValue.strip()
+                itemPubdate.text = curValue
 
         if ("images" in dataset and i < len(list(dataset["images"])) and list(dataset["images"])[i] is not None):
             # https://cyber.harvard.edu/rss/rss.html
             # <enclosure url="http://www.scripting.com/mp3s/weatherReportSuite.mp3" length="12216320" type="audio/mpeg" />
 
             curValue = list(dataset["images"])[i]
-            curValue = curValue.strip()
             encType = ""
 
             if curValue.find("url(") > 0:
@@ -179,6 +175,6 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
             itemAuthorName = etree.SubElement(itemAuthor, "name")
 
             curValue = list(dataset["authors"])[i]
-            itemAuthorName.text = curValue.strip()
+            itemAuthorName.text = curValue
 
     return(etree.ElementTree(root))

@@ -1,31 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-    RSS-voo sisendite parsimine
-"""
-
 import parsers_common
+import rss_config
 import rss_print
 
 
-def article_dict(articleDataDict, pageTree, domain, maxArticleBodies, getArticleBodies):
+def fill_article_dict(articleDataDict, pageTree, domain, session):
 
     articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//div[@class="forum"][2]/ul/li/a/text()')
     articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//div[@class="forum"][2]/ul/li/a/@href')
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
-        if (getArticleBodies is True and i < maxArticleBodies):
+        if (rss_config.GET_ARTICLE_BODIES is True and i < rss_config.MAX_ARTICLE_BODIES):
             # load article into tree
-            articleTree = parsers_common.get_article_data(domain, articleDataDict["urls"][i], False)
+            articleTree = parsers_common.get_article_data(session, domain, articleDataDict["urls"][i], mainPage=False)
 
             # description
-            curArtDescChilds = parsers_common.xpath_to_single(articleTree, '//div[@id="content"]/div[@class="full_width"]', parent=True)
-            articleDataDict["descriptions"].append(curArtDescChilds)
+            curArtDesc = parsers_common.xpath_to_single(articleTree, '//div[@id="content"]/div[@class="full_width"]', parent=True)
+            articleDataDict["descriptions"].append(curArtDesc)
 
             # author
             try:
-                curArtAuthor = curArtDescChilds
+                curArtAuthor = curArtDesc
                 curArtAuthor = curArtAuthor.split('<i> Autor: <b>')[1]
                 curArtAuthor = curArtAuthor.split('</b>')[0]
                 articleDataDict["authors"].append(curArtAuthor)
@@ -34,11 +31,11 @@ def article_dict(articleDataDict, pageTree, domain, maxArticleBodies, getArticle
                 rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
 
             # it's not possible to make two similar search on same dataset
-            articleTree = parsers_common.get_article_data(domain, articleDataDict["urls"][i], False)
+            articleTree = parsers_common.get_article_data(session, domain, articleDataDict["urls"][i], mainPage=False)
 
             # image
-            curArtPubImage = parsers_common.xpath_to_single(articleTree, '//div[@id="content"]/div[@class="full_width"]/a/img[@class="thumb"]/@src')
-            articleDataDict["images"].append(curArtPubImage)
+            curArtMedia = parsers_common.xpath_to_single(articleTree, '//div[@id="content"]/div[@class="full_width"]/a/img[@class="thumb"]/@src')
+            articleDataDict["images"].append(curArtMedia)
 
             # timeformat magic from "13/12/2017 22:24:59" to to datetime()
             curArtPubDate = parsers_common.xpath_to_single(articleTree, '//div[@id="content"]/div[@class="full_width"]/p[*]/i/b[2]/text()')

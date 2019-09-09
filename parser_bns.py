@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import parsers_common
+import rss_config
 
 
-def article_dict(articleDataDict, pageTree, domain, maxArticleBodies, getArticleBodies):
+def fill_article_dict(articleDataDict, pageTree, domain, session):
 
     articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '//div[@class="js-newsline-container"]/span[1]/text()')
     articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//div[@class="js-newsline-container"]/div/a/text()')
@@ -20,13 +21,13 @@ def article_dict(articleDataDict, pageTree, domain, maxArticleBodies, getArticle
         curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate, "%d %m %Y %H:%M")
         articleDataDict["pubDates"][i] = curArtPubDate
 
-        if (getArticleBodies is True and i < maxArticleBodies):
+        if (rss_config.GET_ARTICLE_BODIES is True and i < rss_config.MAX_ARTICLE_BODIES):
             # load article into tree
-            articleTree = parsers_common.get_article_data(domain, articleDataDict["urls"][i], False)
+            articleTree = parsers_common.get_article_data(session, domain, articleDataDict["urls"][i], mainPage=False)
 
             # description
-            curArtDescChilds = parsers_common.xpath_to_single(articleTree, '//div[@class="news-preview"]/div/text()')
-            articleDataDict["descriptions"].append(curArtDescChilds)
+            curArtDesc = parsers_common.xpath_to_single(articleTree, '//div[@class="news-preview"]/div/text()')
+            articleDataDict["descriptions"].append(curArtDesc)
         else:
             # description
             articleDataDict["descriptions"].append(articleDescriptionsTag[i] + "<br>" + articleDescriptionsRaw[i])

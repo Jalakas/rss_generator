@@ -2,31 +2,28 @@
 # -*- coding: utf-8 -*-
 
 import parsers_common
+import rss_config
 import rss_print
 
 
-def article_dict(articleDataDict, pageTree, domain, maxArticleBodies, getArticleBodies):
+def fill_article_dict(articleDataDict, pageTree, domain, session):
 
     articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//div[@id="body1"]/h1/a/@href')
 
-    articleUrlParents = parsers_common.xpath_to_list(pageTree, '//div[@id="body1"]/h1/a', parent=True)
+    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//div[@id="body1"]/h1/a', parent=True)
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
-        # titles
-        curArtTitlesChilds = parsers_common.stringify_index_children(articleUrlParents, i)
-        articleDataDict["titles"].append(curArtTitlesChilds)
-
-        if (getArticleBodies is True and i < maxArticleBodies):
+        if (rss_config.GET_ARTICLE_BODIES is True and i < rss_config.MAX_ARTICLE_BODIES):
             # load article into tree
-            articleTree = parsers_common.get_article_data(domain, articleDataDict["urls"][i], False)
+            articleTree = parsers_common.get_article_data(session, domain, articleDataDict["urls"][i], mainPage=False)
 
             # description
-            curArtDescChilds = parsers_common.xpath_to_single(articleTree, '//div[@id="body1"]/div[@class="uudis_sisu"]', parent=True)
-            articleDataDict["descriptions"].append(curArtDescChilds)
+            curArtDesc = parsers_common.xpath_to_single(articleTree, '//div[@id="body1"]/div[@class="uudis_sisu"]', parent=True)
+            articleDataDict["descriptions"].append(curArtDesc)
 
             # media
-            curArtPubImage = parsers_common.xpath_to_single(articleTree, '//div[@id="body1"]/div[@class="listeningItem"]/p/audio/source/@src')
-            articleDataDict["images"].append(curArtPubImage)
+            curArtMedia = parsers_common.xpath_to_single(articleTree, '//div[@id="body1"]/div[@class="listeningItem"]/p/audio/source/@src')
+            articleDataDict["images"].append(curArtMedia)
 
     # remove unwanted content
     k = 0
