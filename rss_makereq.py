@@ -1,100 +1,97 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
     HTML-i hankimine
 """
 
-import os
-import re
-from lxml import html
+from html import unescape
+import requests
 
 import parsers_common
 import rss_config
 import rss_disk
 import rss_print
 
-CACHE_MAIN_ARTICLE_BODIES = False
 
-
-def get_article_data(session, articleUrl, mainPage=False):
-    """
-    Artikli lehe pärimine
-    """
-
-    cacheArticleUrl = articleUrl.replace('/', '|')
-    cacheDomainFolder = articleUrl.split('/')[2]
-
-    osPath = os.path.dirname(os.path.abspath(__file__))
-    osCacheFolder = osPath + '/' + 'article_cache'
-    osCacheFolderDomain = osCacheFolder + '/' + cacheDomainFolder
-    osCacheFolderDomainArticle = osCacheFolderDomain + '/' + cacheArticleUrl
-
-    if mainPage is True and CACHE_MAIN_ARTICLE_BODIES is False:
-        # põhilehekülg tuleb alati alla laadida Internetist, kui me pole devel režiimis
-        htmlPageBytes = make_request(session, articleUrl)
-
-        # salvestame alati kettale
-        rss_disk.write_file_to_cache_folder(osCacheFolder, osCacheFolderDomain, osCacheFolderDomainArticle, htmlPageBytes)
-    else:
-        rss_print.print_debug(__file__, "hangitav leht: " + articleUrl, 1)
-
-        # proovime kõigepealt hankida kettalt
-        htmlPageBytes = rss_disk.read_file_from_cache(osCacheFolderDomainArticle)
-
-        if htmlPageBytes != "":
-            rss_print.print_debug(__file__, "lugesime kettalt: " + osCacheFolderDomainArticle, 2)
-        else:
-            rss_print.print_debug(__file__, "ei õnnestunud kettalt lugeda: " + osCacheFolderDomainArticle, 1)
-
-            # teeme internetipäringu
-            htmlPageBytes = make_request(session, articleUrl)
-
-            # salvestame alati kettale
-            rss_disk.write_file_to_cache_folder(osCacheFolder, osCacheFolderDomain, osCacheFolderDomainArticle, htmlPageBytes)
-
-    # teeme html puu
-    try:
-        articleTree = html.fromstring(htmlPageBytes)
-    except Exception as e:
-        rss_print.print_debug(__file__, "ei õnnestunud luua html objekti leheküljest: " + articleUrl, 0)
-        rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
-
-    return articleTree
-
-
-def make_request(session, articleUrl):
+def get_url_as_html_string(session, articleUrl):
     """
     Päringu teostamine HTML-i allalaadimiseks
+    Väljund: unicode kodeeringus string
     """
 
     rss_print.print_debug(__file__, "teeme internetipäringu lehele: " + articleUrl, 0)
+
+    htmlPageString = ""
+
     try:
         htmlPage = session.get(articleUrl, headers=rss_config.HEADERS, timeout=10)
         htmlPageBytes = htmlPage.content
+        htmlPageBytesEncoding = htmlPage.encoding
     except Exception as e:
         rss_print.print_debug(__file__, "päring ebaõnnestus, tagastame tühja vastuse", 0)
         rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
-        htmlPageBytes = bytes("", encoding='utf-8')
+        return htmlPageString
 
-    # kontrollime kodeeringut
+    # proovime baitide dekodeerise 'kaasapandud' vormingust
     try:
-        htmlPageString = htmlPageBytes.decode("utf-8")
+        htmlPageString = parsers_common.decode_bytes_to_str(htmlPageBytes, htmlPageBytesEncoding)
     except Exception as e:
+        rss_print.print_debug(__file__, "päringu tulemuse dekodeerimine '" + htmlPageBytesEncoding + "' kujul ebaõnnestus", 0)
         rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
-        htmlPageString = parsers_common.fix_broken_utf8_as_encoding(htmlPageBytes, 'iso8859_15')
+        # proovime baitide dekodeerimist 'väljapakutud' vormingust
+        htmlPageBytesEncodingApparent = htmlPage.apparent_encoding
+        rss_print.print_debug(__file__, "proovime dekoodida 'apparent' vormingus '" + htmlPageBytesEncodingApparent + "'", 0)
+        htmlPageString = parsers_common.decode_bytes_to_str(htmlPageBytes, htmlPageBytesEncodingApparent)
+        rss_print.print_debug(__file__, "päringu tulemuse dekodeerimine '" + htmlPageBytesEncodingApparent + "' kujul õnnestus", 0)
 
-    # remove style
-    htmlPageString = re.sub(r"<style[\s\S]*?<\/style>", "", htmlPageString)
+    # kodeeringuprobleemide kontroll
 
-    # remove scripts
-    htmlPageString = re.sub(r"<script[\s\S]*?<\/script>", "", htmlPageString)
+    if (htmlPageString.find("Ã¤") >= 0 or htmlPageString.find("Ãµ") >= 0):
+        pos = max(htmlPageString.find("Ã¤"), htmlPageString.find("Ãµ"))
+        rss_print.print_debug(__file__, "päringu tulemuse formaat htmlPage.encoding: '" + htmlPageBytesEncoding + "'", 1)
+        rss_print.print_debug(__file__, "'Ã' tüüpi kodeering asukohas(" + str(pos) + "): '" + str(htmlPageString[pos - 20:pos + 20]) + "', proovime parandada", 1)
+        htmlPageString = parsers_common.fix_broken_encoding_as_encoding_string(htmlPageString, 'utf-8', 'iso8859_1')
 
-    # remove comments
-    htmlPageString = re.sub(r"<!--[\s\S]*?-->", "", htmlPageString)
+    # ~ if (htmlPageString.find("Ã¤") >= 0 or htmlPageString.find("Ãµ") >= 0) and htmlPageBytesEncoding == "ISO-8859-1":
+        # ~ pos = max(htmlPageString.find("Ã¤"), htmlPageString.find("Ãµ"))
+        # ~ rss_print.print_debug(__file__, "päringu tulemuse formaat htmlPage.encoding: '" + htmlPageBytesEncoding + "'", 0)
+        # ~ rss_print.print_debug(__file__, "'Ã' tüüpi kodeering asukohas(" + str(pos) + "): '" + str(htmlPageString[pos - 20:pos + 20]) + "', proovime parandada", 0)
+        # ~ htmlPageString = parsers_common.decode_bytes_to_str(htmlPageBytes, 'utf-8')
 
-    # eemaldame html-i vahelise whitespace-i
-    htmlPageString = re.sub(r"\s\s+(?=<)", "", htmlPageString)
+    if (htmlPageString.find("¦") >= 0 or htmlPageString.find("¨") >= 0 or htmlPageString.find("¸") >= 0):
+        # https://www.i18nqa.com/debug/table-iso8859-1-vs-iso8859-15.html
+        # '¤' kontrollime hiljem, "´" on levinud sümbol ja ei viita katustega ess-ide probleemile
+        pos = max(htmlPageString.find("¦"), htmlPageString.find("¨"), htmlPageString.find("¸"))
+        rss_print.print_debug(__file__, "päringu tulemuse formaat htmlPage.encoding: '" + htmlPageBytesEncoding + "'", 0)
+        rss_print.print_debug(__file__, "'iso8859_15 as iso8859_1' kodeering asukohas(" + str(pos) + "): '" + str(htmlPageString[pos - 20:pos + 20]) + "', proovime parandada", 0)
+        htmlPageString = parsers_common.fix_broken_encoding_as_encoding_string(htmlPageString, 'iso8859_15', 'iso8859_1')
 
-    htmlPageBytes = bytes(htmlPageString, encoding='utf-8')
-    return htmlPageBytes
+    if htmlPageString.find("&#") >= 0:
+        pos = htmlPageString.find("&#")
+        rss_print.print_debug(__file__, "päringu tulemuse formaat htmlPage.encoding: '" + htmlPageBytesEncoding + "'", 1)
+        rss_print.print_debug(__file__, "'&#' tüüpi kodeering asukohas(" + str(pos) + "): '" + str(htmlPageString[pos - 20:pos + 20]) + "', proovime parandada", 1)
+        htmlPageString = unescape(htmlPageString)
+
+    # salvestame kõikide netipäringute tulemused alati kettale
+    rss_disk.write_file_string_to_cache(articleUrl, htmlPageString)
+
+    return htmlPageString
+
+
+def upload_file(curFilename, curFilenameFull):
+    try:
+        curFile = open(curFilenameFull, 'rb')
+        files = {rss_config.UPLOAD_NAME: curFile}
+        reply = requests.post(rss_config.UPLOAD_URL, files=files)
+        replyStatusCode = reply.status_code
+
+        rss_print.print_debug(__file__, "reply.status_code: " + str(replyStatusCode), 3)
+
+        if replyStatusCode == 200:
+            rss_print.print_debug(__file__, "faili üleslaadimine õnnestus: " + curFilename, 3)
+        else:
+            rss_print.print_debug(__file__, "faili üleslaadimine EBAõnnestus: " + curFilename, 0)
+            rss_print.print_debug(__file__, "serveri vastus: " + str(reply.text), 2)
+    except Exception as e:
+        rss_print.print_debug(__file__, "faili üleslaadimine EBAõnnestus: " + curFilename, 0)
+        rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)

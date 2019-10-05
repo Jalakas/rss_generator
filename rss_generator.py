@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
     RSS voogude genereerimise käivitaja
 """
 
+import sys
+
 import os
 import random
-import sys
 import requests
 
 import parsers_common
 import rss_config
+import rss_disk
 import rss_maker
 import rss_makereq
 import rss_print
@@ -36,16 +37,13 @@ import parser_stokker  # noqa F401
 import parser_tartuekspress  # noqa F401
 import parser_tootukassa  # noqa F401
 import parser_trm  # noqa F401
-
-OS_PATH = os.path.dirname(os.path.abspath(__file__))
-LATEST_FEEDS_PATH = OS_PATH + '/' + 'latest_feeds'
-OLDER_FEEDS_PATH = OS_PATH + '/' + 'older_feeds'
+import parser_vbulletin  # noqa F401
 
 RSS_DEFS = []
 RSS_TO_GENERATE = []
 
 #                 parser,              name,               title,              description            domain                                  domain_rss (optional)
-RSS_DEFS.append(['auto24',            'auto24',           'Auto24',           'foorum',               '',                                     'http://www.auto24.ee/foorum/foorum.php?last_messages=1'])  # noqa E241
+RSS_DEFS.append(['auto24',            'auto24',           'Auto24',           'foorum',               'http://www.auto24.ee',                 'http://www.auto24.ee/foorum/foorum.php?last_messages=1'])  # noqa E241
 RSS_DEFS.append(['avalikteenistus',   'avalikteenistus',  'Avalik teenistus', 'töökohad',             'http://www.rahandusministeerium.ee',   'http://www.rahandusministeerium.ee/et/avalikud-konkursid?page=' + str(random.randint(1, 10))])  # noqa E241
 RSS_DEFS.append(['bns',               'bns',              'BNS',              'uudised',              'http://bns.ee',                        ''])  # noqa E241
 RSS_DEFS.append(['err',               'err',              'ERR',              'videoarhiiv',          'http://arhiiv.err.ee',                 'http://arhiiv.err.ee/viimati-lisatud/err-videoarhiiv/koik'])  # noqa E241
@@ -72,50 +70,55 @@ RSS_DEFS.append(['stokker',           'stokker',          'Stokker',          'o
 RSS_DEFS.append(['tartuekspress',     'tartuekspress',    'Tartu Ekspress',   'uudised',              'http://tartuekspress.ee',              'http://tartuekspress.ee/index.php?page=20&type=3'])  # noqa E241
 RSS_DEFS.append(['tootukassa',        'tootukassa',       'Töötukassa',       'tööpakkumised',        'http://www.tootukassa.ee',             'http://www.tootukassa.ee/toopakkumised?asukohad%5B%5D=EE%2F79&asukohad%5B%5D=EE%2F52&haridustase%5Bmin%5D=KUTSEKORGHARIDUS&haridustase%5Bmax%5D=MAGISTRIOPE'])  # noqa E241
 RSS_DEFS.append(['trm',               'tooriistamarket',  'Tööriistamarket',  'head pakkumised',      'http://www.tooriistamarket.ee',        'http://www.tooriistamarket.ee/et/head-pakkumised?price=1&page=' + str(random.randint(0, 20))])  # noqa E241
+RSS_DEFS.append(['vbulletin',         'elfafoorum',       'ELFA',             'foorum',               'http://www.elfafoorum.ee',             'https://www.elfafoorum.ee/search.php?do=getdaily'])  # noqa E241
+
 
 # user input
 for i in range(1, len(sys.argv)):
-    curSisend = sys.argv[i]
+    curSisend = str(sys.argv[i])
     curSisendArg = curSisend.split("=")[0]
 
-    if str(curSisendArg) == "-limit":
-        MAX_ARTICLE_BODIES = int(curSisend.split("=")[1])
+    if curSisendArg == "-limit":
+        rss_config.MAX_ARTICLE_BODIES = int(curSisend.split("=")[1])
         rss_print.print_debug(__file__, 'sisend: "' + curSisend + '"', 0)
-    elif str(curSisendArg) == "-devel":
-        rss_makereq.cacheMainArticleBodies = True
+    elif curSisend == "-nocache":
+        rss_config.ARTICLE_CACHE_POLICY = 'off'
         rss_print.print_debug(__file__, 'sisend: "' + curSisend + '"', 0)
-    elif str(curSisend) == "-v":
+    elif curSisend == "-cache":
+        rss_config.ARTICLE_CACHE_POLICY = 'all'
+        rss_print.print_debug(__file__, 'sisend: "' + curSisend + '"', 0)
+    elif curSisend == "-v":
         rss_print.PRINT_MESSAGE_LEVEL = max(rss_print.PRINT_MESSAGE_LEVEL, 1)
         rss_print.print_debug(__file__, 'sisend: "' + curSisend + '"', 0)
-    elif str(curSisend) == "-vv":
+    elif curSisend == "-vv":
         rss_print.PRINT_MESSAGE_LEVEL = max(rss_print.PRINT_MESSAGE_LEVEL, 2)
         rss_print.print_debug(__file__, 'sisend: "' + curSisend + '"', 0)
-    elif str(curSisend) == "-vvv":
+    elif curSisend == "-vvv":
         rss_print.PRINT_MESSAGE_LEVEL = max(rss_print.PRINT_MESSAGE_LEVEL, 3)
         rss_print.print_debug(__file__, 'sisend: "' + curSisend + '"', 0)
-    elif str(curSisend) == "-vvvv":
+    elif curSisend == "-vvvv":
         rss_print.PRINT_MESSAGE_LEVEL = max(rss_print.PRINT_MESSAGE_LEVEL, 4)
         rss_print.print_debug(__file__, 'sisend: "' + curSisend + '"', 0)
-    elif str(curSisend) == "-vvvvv":
+    elif curSisend == "-vvvvv":
         rss_print.PRINT_MESSAGE_LEVEL = max(rss_print.PRINT_MESSAGE_LEVEL, 5)
         rss_print.print_debug(__file__, 'sisend: "' + curSisend + '"', 0)
-    elif str(curSisend) != "":
-        rss_print.print_debug(__file__, 'sisend: "' + curSisend + '"', 1)
+    elif curSisend != "":
         for j, rss_def in enumerate(RSS_DEFS):
-            if (curSisend == rss_def[1]):
+            if curSisend == rss_def[1]:
                 RSS_TO_GENERATE.append(j)
+                rss_print.print_debug(__file__, 'sisend: "' + curSisend + '"', 1)
+                # tühjendame hilisema kontrolli jaoks
+                curSisend = ""
                 break
+        # kui for-is ei leitud
+        if curSisend != "":
+            rss_print.print_debug(__file__, 'tundmatu sisend: "' + curSisend + '"', 0)
+
 
 if not RSS_TO_GENERATE:
-    RSS_TO_GENERATE = range(0, len(RSS_DEFS))
+    RSS_TO_GENERATE = range(len(RSS_DEFS))
     if len(sys.argv) > 1:
         rss_print.print_debug(__file__, "ei suutnud sisendist tuvastada sobivat nime, genereeritakse kõik vood.", 0)
-
-# make sure we have subfolders
-if not os.path.exists(LATEST_FEEDS_PATH):
-    os.makedirs(LATEST_FEEDS_PATH)
-if not os.path.exists(OLDER_FEEDS_PATH):
-    os.makedirs(OLDER_FEEDS_PATH)
 
 # make new session
 SESSION = requests.session()
@@ -132,24 +135,22 @@ for curRSS in RSS_TO_GENERATE:
 
     # preparations
     curFilename = curName + '.rss'
-    curFilenameFull = LATEST_FEEDS_PATH + '/' + curFilename
-    destFilenameFull = OLDER_FEEDS_PATH + '/' + curFilename
     articleDataDictEmpty = {"authors": [], "descriptions": [], "images": [], "pubDates": [], "titles": [], "urls": []}
 
-    # load page into tree
-    try:
-        rss_print.print_debug(__file__, "pärime lehe: " + curDomainLong, 2)
-        pageHtmlTree = parsers_common.get_article_data(SESSION, curDomainShort, curDomainLong, mainPage=True)
-        rss_print.print_debug(__file__, parsers_common.elemtree_to_string(pageHtmlTree), 5)
-    except Exception as e:
-        rss_print.print_debug(__file__, "ei suutnud andmeid pärida leheküljelt: " + curDomainLong, 0)
-        rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
-        continue
+    # hangime alati lehe sisu
+    rss_print.print_debug(__file__, "asume internetist pärima lehte: " + curDomainLong, 2)
+    pageHtmlString = parsers_common.get_article_string(SESSION, curDomainShort, curDomainLong, noCache=True)
+
+    # puhastab lehe üleliigsest jamast
+    pageHtmlString = parsers_common.html_string_cleanup(pageHtmlString)
+
+    # load page string into tree
+    rss_print.print_debug(__file__, "asume looma html objekti: " + curDomainLong, 2)
+    articleHtmlTree = parsers_common.html_tree_from_string(pageHtmlString, curDomainLong)
 
     # get all content from page
-    rss_print.print_debug(__file__, "alustame sisu töötlemist: " + str(curDomainLong), 2)
-    articleDataDict = curParser.fill_article_dict(articleDataDictEmpty, pageHtmlTree, curDomainShort, SESSION)
-    rss_print.print_debug(__file__, "articleDataDict = " + str(articleDataDict), 4)
+    rss_print.print_debug(__file__, "asume sisu hankimima: " + curDomainLong, 2)
+    articleDataDict = curParser.fill_article_dict(articleDataDictEmpty, articleHtmlTree, curDomainShort, curDomainLong, SESSION)
 
     lastValueCount = 0
     lastValueName = ""
@@ -171,36 +172,28 @@ for curRSS in RSS_TO_GENERATE:
         lastValueName = curValueName
 
     # combine rss file
-    rss_print.print_debug(__file__, "koostame rss-i: " + curDomainLong, 2)
-    rss_content = rss_maker.rssmaker(articleDataDict, curTitle, curDomainShort, curDomainLong, curDescription, rss_config.HOST_URL + "/" + curFilename)
+    rss_print.print_debug(__file__, "asume koostame rss-i: " + curDomainLong, 2)
+    rss_content = rss_maker.rssmaker(articleDataDict, curTitle, curDomainShort, curDomainLong, curDescription)
+
+    # make sure we have subfolders
+    OS_PATH = os.path.dirname(os.path.abspath(__file__))
+    LATEST_FEEDS_PATH = OS_PATH + '/' + 'latest_feeds'
+    OLDER_FEEDS_PATH = OS_PATH + '/' + 'older_feeds'
+    if not os.path.exists(LATEST_FEEDS_PATH):
+        os.makedirs(LATEST_FEEDS_PATH)
+    if not os.path.exists(OLDER_FEEDS_PATH):
+        os.makedirs(OLDER_FEEDS_PATH)
+    curFilenameFull = LATEST_FEEDS_PATH + '/' + curFilename
+    destFilenameFull = OLDER_FEEDS_PATH + '/' + curFilename
 
     # move away old feed, if there is any
-    try:
-        os.rename(curFilenameFull, destFilenameFull)
-        rss_print.print_debug(__file__, "faili liigutamine õnnestus: " + curFilenameFull + "->" + destFilenameFull, 2)
-    except Exception as e:
-        rss_print.print_debug(__file__, "faili liigutamine EBAõnnestus: " + curFilenameFull + "->" + destFilenameFull, 0)
-        rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
+    rss_print.print_debug(__file__, "asume liigutame faili: " + curFilenameFull + "->" + destFilenameFull, 2)
+    rss_disk.rename_file(curFilenameFull, destFilenameFull)
 
     # write feed
-    try:
-        rss_content.write(open(curFilenameFull, 'wb'), encoding='UTF-8', pretty_print=True)
-        rss_print.print_debug(__file__, "faili salvestamine õnnestus: " + curFilenameFull, 2)
-    except Exception as e:
-        rss_print.print_debug(__file__, "faili salvestamine EBAõnnestus: " + curFilenameFull, 0)
-        rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
+    rss_print.print_debug(__file__, "asume salvestame faili: " + curFilenameFull, 2)
+    rss_disk.save_file(curFilenameFull, rss_content)
 
     # upload feed
-    try:
-        files = {rss_config.UPLOAD_NAME: open(curFilenameFull, 'rb')}
-        reply = requests.post(rss_config.UPLOAD_URL, files=files)
-
-        rss_print.print_debug(__file__, "reply.status_code: " + str(reply.status_code), 3)
-        if (reply.status_code == 200):
-            rss_print.print_debug(__file__, "faili üleslaadimine õnnestus: " + curFilename, 2)
-        else:
-            rss_print.print_debug(__file__, "faili üleslaadimine EBAõnnestus: " + curFilename, 0)
-            rss_print.print_debug(__file__, "serveri vastus: " + str(reply.text), 2)
-    except Exception as e:
-        rss_print.print_debug(__file__, "faili üleslaadimine EBAõnnestus: " + curFilename, 0)
-        rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
+    rss_print.print_debug(__file__, "asume faili üles laadima: " + curFilenameFull, 2)
+    rss_makereq.upload_file(curFilename, curFilenameFull)

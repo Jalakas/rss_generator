@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 import parsers_common
 
 
-def fill_article_dict(articleDataDict, pageTree, domain, session):
+def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
     articleDataDict["descriptions"] = parsers_common.xpath_to_list(pageTree, '//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/div/p/text()')
     articleDataDict["images"] = parsers_common.xpath_to_list(pageTree, '//ul[@class="news-list list"]/li/div[@class="inner"]/a[@class="news-list-link"]/p/img/@src')

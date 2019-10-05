@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
     Privaatsed seadistused
@@ -20,3 +19,5 @@ GET_ARTICLE_BODIES = True
 MAX_ARTICLE_BODIES = 200
 
 WEBDRIVER_PATH = "/home/user/folder/geckodriver"
+
+ARTICLE_CACHE_POLICY = 'auto'  # options = 'all', 'auto', 'off'

@@ -10,54 +10,25 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
     maxArticleBodies = min(rss_config.MAX_ARTICLE_BODIES, 15)
     maxArticlePostsCount = round(200 / maxArticleBodies)  # set 0 for all posts
 
-    if (domain.find("militaar.net") >= 0):
-        articlesTitles = parsers_common.xpath_to_list(pageTree, '//tr[@valign="middle"]/td[3]/a/text()')
-        articlesUrls = parsers_common.xpath_to_list(pageTree, '//tr[@valign="middle"]/td[3]/a/@href')
-    else:
-        articlesTitles = parsers_common.xpath_to_list(pageTree, '//div[@class="inner"]/ul/li/dl/dt/div/a[1]/text()')
-        articlesUrls = parsers_common.xpath_to_list(pageTree, '//div[@class="inner"]/ul/li/dl/dt/div/a[1]/@href')
+    articlesTitles = parsers_common.xpath_to_list(pageTree, '//li/div/div/div[@class="inner"]/h3/a/text()')
+    articlesUrls = parsers_common.xpath_to_list(pageTree, '//li/div/div/div[@class="inner"]/h3/a/@href')
 
     if not articlesUrls:
-        if (domain.find("arutelud.com") >= 0):
-            rss_print.print_debug(__file__, "aktiivseid teemasid ei leitud, arutelude foorumis külastame mammutteemat", 0)
-            articlesTitles.append("Arutelud")
-            articlesUrls.append("http://arutelud.com/viewtopic.php?f=3&t=4&sd=d&sk=t&st=7")
-        else:
-            rss_print.print_debug(__file__, "ei leidnud teemade nimekirjast ühtegi aktiivset teemat", 0)
+        rss_print.print_debug(__file__, "ei leidnud teemade nimekirjast ühtegi aktiivset teemat", 0)
 
     # teemade läbivaatamine
     for i in parsers_common.article_urls_range(articlesUrls):
-        if (articlesTitles[i] == "Merevägi ja rannakaitse"):
-            rss_print.print_debug(__file__, "jätame vahele teema: 'Merevägi ja rannakaitse'", 1)
-            continue
-
         # teemalehe sisu hankimine
         if (rss_config.GET_ARTICLE_BODIES is True and i < maxArticleBodies):
             articlesUrls[i] = articlesUrls[i].split("&sid=")[0]
+
             articlesPostsTree = parsers_common.get_article_tree(session, domain, articlesUrls[i] + "&start=100000", noCache=True)
 
-            if (domain.find("militaar.net") >= 0):
-                articlesPostsAuthors = parsers_common.xpath_to_list(articlesPostsTree, '//tr/td/b[@class="postauthor"]/text()')
-                articlesPostsPubDates = parsers_common.xpath_to_list(articlesPostsTree, '//tr/td[@class="gensmall"]/div[2]/text()')
-                articlesPostsUrls = parsers_common.xpath_to_list(articlesPostsTree, '//tr/td[@class="gensmall"]/div[2]/a/@href')
-                articlesPostsDescriptions = parsers_common.xpath_to_list(articlesPostsTree, '//tr/td/div[@class="postbody"][1]', parent=True)
-            else:
-                articlesPostsAuthors = parsers_common.xpath_to_list(articlesPostsTree, '//p[@class="author"]//strong//text()')
-                articlesPostsPubDates = parsers_common.xpath_to_list(articlesPostsTree, '//p[@class="author"]/text()[1]')
-                articlesPostsUrls = parsers_common.xpath_to_list(articlesPostsTree, '//p[@class="author"]/a/@href')
-                articlesPostsDescriptions = parsers_common.xpath_to_list(articlesPostsTree, '//div[@class="content"]', parent=True)
-
-            if articlesPostsUrls:
-                if not articlesPostsPubDates:
-                    rss_print.print_debug(__file__, "ei suutnud hankida ühtegi aega", 0)
-                else:
-                    if (len(str(articlesPostsPubDates[0])) < 5):
-                        rss_print.print_debug(__file__, "hangitud aeg[0] liiga lühike: '" + articlesPostsPubDates[0] + "', proovime alternatiivi...", 1)
-                        articlesPostsPubDates = parsers_common.xpath_to_list(articlesPostsTree, '//p[@class="author"]/text()[2]')
-                    if (len(str(articlesPostsPubDates[0])) < 5):
-                        rss_print.print_debug(__file__, "hangitud aeg[0] liiga lühike: '" + articlesPostsPubDates[0] + "'", 0)
-                    else:
-                        rss_print.print_debug(__file__, "hangitud aeg[0]: '" + articlesPostsPubDates[0] + "'", 4)
+            articlesPostsAuthors = parsers_common.xpath_to_list(articlesPostsTree, '//ol/li/div[@class="postdetails"]/div[@class="userinfo"]/div[@class="username_container"]/div[@class="popupmenu memberaction"]/a/strong/text()')
+            articlesPostsPubDates = parsers_common.xpath_to_list(articlesPostsTree, '//ol/li/div[@class="posthead"]/span/span[@class="date"]/text()')
+            articlesPostsPubTimes = parsers_common.xpath_to_list(articlesPostsTree, '//ol/li/div[@class="posthead"]/span/span[@class="date"]/span[@class="time"]/text()')
+            articlesPostsUrls = parsers_common.xpath_to_list(articlesPostsTree, '//ol/li/div[@class="posthead"]/span[@class="nodecontrols"]/a/@href')
+            articlesPostsDescriptions = parsers_common.xpath_to_list(articlesPostsTree, '//ol/li/div[2]/div[2]/div[1]/div/div/blockquote', parent=True)
 
             # postituste läbivaatamine
             for j in parsers_common.article_posts_range(articlesPostsUrls, maxArticlePostsCount):
@@ -72,14 +43,15 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
                 curArtDesc = curArtDesc.replace("</blockquote></div>", "</blockquote>")
                 curArtDesc = curArtDesc.replace("<div><blockquote>", "<blockquote>")
                 curArtDesc = curArtDesc.replace("<div><b>Tsiteeri:</b></div>", "")
+                curArtDesc = curArtDesc.replace("/threads/images/", "/images/")  # elfa tsitaadi alguse pildilingid on vigased
                 curArtDesc = parsers_common.fix_drunk_post(curArtDesc)
                 curArtDesc = parsers_common.format_tags(curArtDesc, '<div class="quotecontent">', "</div>", "<blockquote>", "</blockquote>")
                 articleDataDict["descriptions"].append(curArtDesc)
 
                 # datetime
-                curArtPubDate = articlesPostsPubDates[j]
-                curArtPubDate = parsers_common.months_to_int(curArtPubDate)
-                curArtPubDate = parsers_common.remove_weekday_strings(curArtPubDate)
+                curArtPubDate = articlesPostsPubDates[j] + articlesPostsPubTimes[j]
+                curArtPubDate = parsers_common.replace_string_with_timeformat(curArtPubDate, "Eile", "%d-%m-%y", offSetDays=-1)
+                curArtPubDate = parsers_common.replace_string_with_timeformat(curArtPubDate, "Täna", "%d-%m-%y", offSetDays=0)
 
                 if curArtPubDate.find("-") >= 0:
                     # timeformat magic from "21-11-16, 04:11" to datetime()

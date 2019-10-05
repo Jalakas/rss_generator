@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
     RSS-voo sisendite parsimine
@@ -8,7 +7,7 @@
 import parsers_common
 
 
-def fill_article_dict(articleDataDict, pageTree, domain, session):
+def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
     articleDataDict["images"] = parsers_common.xpath_to_list(pageTree, '//div[@class="product"]/div[@class="image-cell"]/img/@src')
     articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//div[@class="product"]/div[@class="description-cell"]/h2/text()')

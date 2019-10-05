@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
-    RSS faili genereerimine ja kirjutamine
+    RSS failisisu genereerimine
 """
 
-import re
-import time
 from lxml import etree
 
-import rss_print
 import parsers_common
+import rss_print
 
 
-def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFullText):
+def rssmaker(dataset, titleText, domainText, linkText, descriptionText):
     root = etree.Element("rss", version="2.0")
 
     channel = etree.SubElement(root, "channel")
@@ -27,10 +24,9 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
     description = etree.SubElement(channel, "description")
     description.text = descriptionText
 
-    # https://cyber.harvard.edu/rss/rss.html:
-    # "Sat, 07 Sep 2002 09:42:31 GMT" ehk https://tools.ietf.org/html/rfc822
+    # https://cyber.harvard.edu/rss/rss.html: "Sat, 07 Sep 2002 09:42:31 GMT" ehk https://tools.ietf.org/html/rfc822
     curTimeFormat = "%a, %d %b %Y %H:%M:%S %z"  # Fri, 17 May 2019 13:37:00 +0300
-    curTimeFloat = time.time()
+    curTimeFloat = parsers_common.time_float()
     curGenerTime = parsers_common.float_to_datetime(curTimeFloat, curTimeFormat)
 
     lastBuildDate = etree.SubElement(channel, "lastBuildDate")
@@ -41,7 +37,7 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
     ttl = etree.SubElement(channel, "ttl")
     ttl.text = str(60)
 
-    for i in range(0, len(dataset["urls"])):
+    for i in range(len(dataset["urls"])):
         item = etree.SubElement(channel, "item")
 
         if ("urls" in dataset and i < len(list(dataset["urls"])) and list(dataset["urls"])[i] is not None):
@@ -50,15 +46,11 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
 
             curValue = list(dataset["urls"])[i]
             curValue = curValue.rstrip("/")
-
-            if (curValue.find('http', 0, 4) == -1):
+            if curValue.find('http', 0, 4) == -1:
                 rss_print.print_debug(__file__, "lingist ei leitud http-d: " + str(curValue), 3)
                 curValue = parsers_common.domain_url(domainText, curValue)
 
-            curValueWithoutHttp = curValue
-            curValueWithoutHttp = parsers_common.lstrip_string(curValueWithoutHttp, "https://")
-            curValueWithoutHttp = parsers_common.lstrip_string(curValueWithoutHttp, "http://")
-            curValueWithoutHttp = parsers_common.lstrip_string(curValueWithoutHttp, "www.")
+            curValueWithoutHttp = parsers_common.simplify_link(curValue)
 
             itemGuid.text = curValueWithoutHttp
             itemLink.text = curValue
@@ -68,11 +60,12 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
 
             curValue = list(dataset["titles"])[i]
             curValue = curValue.replace("<br>", " ")
+            curValue = curValue.replace("  ", " ")
             curValue = curValue.strip()
             curValue = parsers_common.capitalize_first(curValue)
             itemTitle.text = curValue
         else:
-            rss_print.print_debug(__file__, "järgneval aadressil puudus vajalik pealkiri: " + str(itemLink.text))
+            rss_print.print_debug(__file__, "järgneval aadressil puudus vajalik pealkiri: " + str(itemLink.text), 0)
             itemTitle = etree.SubElement(item, "title")
             itemTitle.text = title.text + " " + itemGuid.text
 
@@ -80,33 +73,14 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
             itemDescription = etree.SubElement(item, "description")
 
             curValue = list(dataset["descriptions"])[i]
-
-            # remove trackers from links
-            curValue = re.sub(r'" onclick[\s\S]*?;', "", curValue)
-            curValue = re.sub(r'_ga=[0-9.-]*', "", curValue)
-            curValue = re.sub(r'fbclid=[0-9A-Za-z-]*', "", curValue)
-            curValue = re.sub(r'gclid=[0-9A-Za-z-_]*', "", curValue)
-            curValue = re.sub(r'utm_source=pm_fb[0-9A-Za-z&_=]*', "", curValue)
-            curValue = re.sub(r'&_[a-zA-Z0-9_-]*', "", curValue)  # delfi
-
-            curValue = curValue.replace("?&", "?")
-
-            # fix links addresses
-            curValue = curValue.replace('src="./', 'src="' + domainText + '/')
-            curValue = curValue.replace('src="/', 'src="' + domainText + '/')
-            curValue = curValue.replace('href="./', 'href="' + domainText + '/')
-            curValue = curValue.replace('href="/', 'href="' + domainText + '/')
-
-            # remove useless space
-            curValue = curValue.replace("<br/>", "<br>")
-            curValue = curValue.replace("<br><br>", "<br>")
             curValue = curValue.strip()
-            curValue = parsers_common.lstrip_string(curValue, "<br>")
-
+            curValue = parsers_common.lchop(curValue, "<br>")
             curValue = parsers_common.capitalize_first(curValue)
-            itemDescription.text = curValue.encode('ascii', 'xmlcharrefreplace').strip()
+
+            # konverdime sisu ascii-sse
+            itemDescription.text = curValue.encode('ascii', 'xmlcharrefreplace')
         else:
-            rss_print.print_debug(__file__, "järgneval pealkirjal puudus vajalik kirjeldus: " + str(itemTitle.text))
+            rss_print.print_debug(__file__, "järgneval pealkirjal puudus vajalik kirjeldus: " + str(itemTitle.text), 0)
             itemDescription = etree.SubElement(item, "description")
             itemDescription.text = itemTitle.text
 
@@ -115,7 +89,7 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
 
             curValue = list(dataset["pubDates"])[i]
 
-            curTimeFloat = time.time()
+            curTimeFloat = parsers_common.time_float()
 
             postTimeFloat = parsers_common.raw_to_float(curValue, curTimeFormat)
             postTimeFloatLimit = (curTimeFloat - 31 * 24 * 60 * 60)
@@ -154,18 +128,18 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
             if len(curValue) < len(domainText + "1.jpg"):
                 rss_print.print_debug(__file__, "ei lisa RSS-i meedialinki, kuna see on liiga lühike: '" + str(curValue) + "'", 0)
             else:
-                if (curValue.find('http', 0, 4) == -1):
+                if curValue.find('http', 0, 4) == -1:
                     rss_print.print_debug(__file__, "meedialingist ei leitud http-d: '" + str(curValue) + "'", 3)
                     curValue = parsers_common.domain_url(domainText, curValue)
 
-                if (encType == ""):
-                    if ".jpg" in (curValue):
+                if encType == "":
+                    if ".jpg" in curValue:
                         encType = "image/jpeg"
-                    elif ".jpeg" in (curValue):
+                    elif ".jpeg" in curValue:
                         encType = "image/jpeg"
-                    elif ".png" in (curValue):
+                    elif ".png" in curValue:
                         encType = "image/png"
-                    elif ".mp3" in (curValue):
+                    elif ".mp3" in curValue:
                         encType = "audio/mpeg"
 
                 etree.SubElement(item, "enclosure", {'url': curValue, 'length': '', 'type': encType, })
@@ -177,4 +151,6 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText, hrefFull
             curValue = list(dataset["authors"])[i]
             itemAuthorName.text = curValue
 
-    return(etree.ElementTree(root))
+    ret = etree.ElementTree(root)
+
+    return ret

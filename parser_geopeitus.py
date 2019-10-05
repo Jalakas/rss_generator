@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 import parsers_common
-import rss_print
 
 
-def fill_article_dict(articleDataDict, pageTree, domain, session):
+def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
     articleDataDict["descriptions"] = parsers_common.xpath_to_list(pageTree, '//div[@id="t-content"]/table[1]/tr', parent=True)
     articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '//div[@id="t-content"]/table[1]/tr/td[1]/text()')
@@ -19,12 +17,9 @@ def fill_article_dict(articleDataDict, pageTree, domain, session):
         articleDataDict["pubDates"][i] = curArtPubDate
 
     # remove unwanted content
-    k = 0
-    while (k < len(articleDataDict["urls"])):
-        rss_print.print_debug(__file__, "kontrollime kannet(" + str(k + 1) + "/" + str(len(articleDataDict["urls"])) + "): " + articleDataDict["titles"][k], 2)
-        if ('Tartu' not in articleDataDict["descriptions"][k]):
-            articleDataDict = parsers_common.del_article_dict_index(articleDataDict, k)
-        else:
-            k += 1
+    dictWhitelist = ["Tartu"]
+    dictCond = "in"
+    dictField = "descriptions"
+    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictField, dictCond, dictWhitelist=dictWhitelist)
 
     return articleDataDict

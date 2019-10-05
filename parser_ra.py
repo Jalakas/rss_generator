@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 import parsers_common
 import rss_config
 
 
-def fill_article_dict(articleDataDict, pageTree, domain, session):
+def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
     articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '//li[@class="b-posts__list-item"]/p[@class="b-posts__list-item-summary"]/text()')
     articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/text()')
@@ -20,10 +19,10 @@ def fill_article_dict(articleDataDict, pageTree, domain, session):
 
         if (rss_config.GET_ARTICLE_BODIES is True and i < rss_config.MAX_ARTICLE_BODIES):
             # load article into tree
-            articleTree = parsers_common.get_article_data(session, domain, articleDataDict["urls"][i], mainPage=False)
+            pageTree = parsers_common.get_article_tree(session, domain, articleDataDict["urls"][i], noCache=False)
 
             # description
-            curArtDesc = parsers_common.xpath_to_single(articleTree, '//div[@class="b-article"]', parent=True)
+            curArtDesc = parsers_common.xpath_to_single(pageTree, '//div[@class="b-article"]', parent=True)
             articleDataDict["descriptions"].append(curArtDesc)
 
     return articleDataDict
