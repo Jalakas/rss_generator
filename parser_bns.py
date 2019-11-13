@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import parsers_datetime
 import parsers_common
 import rss_config
 
@@ -17,7 +18,7 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
         # timeformat magic from "14 dets  2017 11:34" to datetime()
         curArtPubDate = articleDataDict["pubDates"][i]
         curArtPubDate = parsers_common.months_to_int(curArtPubDate)
-        curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate, "%d %m %Y %H:%M")
+        curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d %m %Y %H:%M")
         articleDataDict["pubDates"][i] = curArtPubDate
 
         if (rss_config.GET_ARTICLE_BODIES is True and i < rss_config.MAX_ARTICLE_BODIES):
@@ -29,6 +30,7 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
             articleDataDict["descriptions"].append(curArtDesc)
         else:
             # description
-            articleDataDict["descriptions"].append(articleDescriptionsTag[i] + "<br>" + articleDescriptionsRaw[i])
+            curArtDesc = articleDescriptionsTag[i] + "<br>" + articleDescriptionsRaw[i]
+            articleDataDict["descriptions"].append(curArtDesc)
 
     return articleDataDict

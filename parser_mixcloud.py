@@ -12,10 +12,10 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
     # remove unwanted content
     dictBlacklist = [
-        "(uus) raamat", "Abramova", "Based Broccoli", "Bisweed", "EKKM", "ERROR!", "Floorshow", "Gnoom", "Hillbilly Picnic", "IDA Jutud", "IDA Räpp",
-        "Keskkonnatund", "Kink Konk", "Korrosioon", "Kräpp", "Let Me Juke", "Liin", "Lunchbreak Lunchdate", "Meie igapäevane avalik ruum", "Muster", "Müürilehe Hommik",
-        "Paneel", "Playa Music", "Propel", "Puhkus", "Rets Records", "Room_202", "Rõhk", "SAAL RAADIO", "Soojad Suhted", "Soojad suhted", "Söökladisko", "Triinemets & Co.", "Vitamiin K",
-        "Zubrovka AM", "Ära Kaaguta!", "Ära kaaguta!"
+        "(uus) raamat", "Abramova", "Based Broccoli", "Beats of No Nation", "Bisweed", "EKKM", "ERROR!", "Floorshow", "Gnoom", "Hard Feeler", "Hillbilly Picnic", "IDA Jutud", "IDA Räpp", "Intro",
+        "Katus", "Keskkonnatund", "Kink Konk", "Korrosioon", "Kräpp", "Let Me Juke", "Liin ", "LIIN", "Lunchbreak Lunchdate", "Meie igapäevane avalik ruum", "Muster", "Müürilehe Hommik", "N-LIB"
+        "Paneel", "Playa Music", "Propel", "Puhkus", "Oleneb päevast!", "Rets Records", "Room_202", "Rõhk", "SAAL Raadio", "SAAL RAADIO", "Soojad Suhted", "Soojad suhted", "Svet Nureka", "Söökladisko",
+        "Triinemets.", "Vitamiin K", "Zubrovka AM", "Ära Kaaguta!", "Ära kaaguta!"
         ]
     dictCond = "in"
     dictField = "titles"

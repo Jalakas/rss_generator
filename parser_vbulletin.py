@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import parsers_common
+import parsers_datetime
 import rss_config
 import rss_print
 
@@ -22,64 +23,49 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
         if (rss_config.GET_ARTICLE_BODIES is True and i < maxArticleBodies):
             articlesUrls[i] = articlesUrls[i].split("&sid=")[0]
 
-            articlesPostsTree = parsers_common.get_article_tree(session, domain, articlesUrls[i] + "&start=100000", noCache=True)
+            pageTree = parsers_common.get_article_tree(session, domain, articlesUrls[i] + "&start=100000", noCache=True)
 
-            articlesPostsAuthors = parsers_common.xpath_to_list(articlesPostsTree, '//ol/li/div[@class="postdetails"]/div[@class="userinfo"]/div[@class="username_container"]/div[@class="popupmenu memberaction"]/a/strong/text()')
-            articlesPostsPubDates = parsers_common.xpath_to_list(articlesPostsTree, '//ol/li/div[@class="posthead"]/span/span[@class="date"]/text()')
-            articlesPostsPubTimes = parsers_common.xpath_to_list(articlesPostsTree, '//ol/li/div[@class="posthead"]/span/span[@class="date"]/span[@class="time"]/text()')
-            articlesPostsUrls = parsers_common.xpath_to_list(articlesPostsTree, '//ol/li/div[@class="posthead"]/span[@class="nodecontrols"]/a/@href')
-            articlesPostsDescriptions = parsers_common.xpath_to_list(articlesPostsTree, '//ol/li/div[2]/div[2]/div[1]/div/div/blockquote', parent=True)
+            articlesPostsAuthors = parsers_common.xpath_to_list(pageTree, '//ol/li/div[@class="postdetails"]/div[@class="userinfo"]/div[@class="username_container"]/div[@class="popupmenu memberaction"]/a/strong/text()')
+            articlesPostsPubDates = parsers_common.xpath_to_list(pageTree, '//ol/li/div[@class="posthead"]/span/span[@class="date"]/text()')
+            articlesPostsPubTimes = parsers_common.xpath_to_list(pageTree, '//ol/li/div[@class="posthead"]/span/span[@class="date"]/span[@class="time"]/text()')
+            articlesPostsUrls = parsers_common.xpath_to_list(pageTree, '//ol/li/div[@class="posthead"]/span[@class="nodecontrols"]/a/@href')
+            articlesPostsDescriptions = parsers_common.xpath_to_list(pageTree, '//ol/li/div[2]/div[2]/div[1]/div/div/blockquote', parent=True)
 
             # postituste läbivaatamine
             for j in parsers_common.article_posts_range(articlesPostsUrls, maxArticlePostsCount):
-                rss_print.print_debug(__file__, 'teema postitus nr. ' + str(j + 1) + "/(" + str(len(articlesPostsUrls)) + ") on " + articlesPostsUrls[j], 2)
-
                 # author
-                articleDataDict["authors"].append(articlesPostsAuthors[j])
+                curArtAuthor = articlesPostsAuthors[j]
+                articleDataDict["authors"].append(curArtAuthor)
 
                 # description
                 curArtDesc = articlesPostsDescriptions[j]
-                curArtDesc = curArtDesc.replace("</blockquote><br>", "</blockquote>")
-                curArtDesc = curArtDesc.replace("</blockquote></div>", "</blockquote>")
-                curArtDesc = curArtDesc.replace("<div><blockquote>", "<blockquote>")
-                curArtDesc = curArtDesc.replace("<div><b>Tsiteeri:</b></div>", "")
-                curArtDesc = curArtDesc.replace("/threads/images/", "/images/")  # elfa tsitaadi alguse pildilingid on vigased
+                if "elfafoorum.ee" in domain:
+                    curArtDesc = curArtDesc.replace('<img src="images/misc/quote_icon.png" alt="Tsitaat"> Esmalt postitatud', "")
+                    curArtDesc = curArtDesc.replace('<img class="inlineimg" src="images/buttons2/viewpost-right.png" alt="Vaata postitust">', "")
+                    curArtDesc = parsers_common.fix_quatation_tags(curArtDesc, '<div class="quote_container">', "</div>", "<blockquote>", "</blockquote>")
                 curArtDesc = parsers_common.fix_drunk_post(curArtDesc)
-                curArtDesc = parsers_common.format_tags(curArtDesc, '<div class="quotecontent">', "</div>", "<blockquote>", "</blockquote>")
                 articleDataDict["descriptions"].append(curArtDesc)
 
                 # datetime
                 curArtPubDate = articlesPostsPubDates[j] + articlesPostsPubTimes[j]
-                curArtPubDate = parsers_common.replace_string_with_timeformat(curArtPubDate, "Eile", "%d-%m-%y", offSetDays=-1)
-                curArtPubDate = parsers_common.replace_string_with_timeformat(curArtPubDate, "Täna", "%d-%m-%y", offSetDays=0)
-
-                if curArtPubDate.find("-") >= 0:
-                    # timeformat magic from "21-11-16, 04:11" to datetime()
-                    curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate, "%d-%m-%y,%H:%M")
-                elif curArtPubDate.find(".") >= 0:
-                    # timeformat magic from "Pühapäev 26. Mai 2019, 18:07:05" to datetime()
-                    curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate, "%d. %m %Y, %H:%M:%S")
-                elif (curArtPubDate.find("am") >= 0 or curArtPubDate.find("pm") >= 0):
-                    # timeformat magic from "R Juun 26, 2019 8:07 pm" to datetime()
-                    curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate[2:], "%m %d, %Y %I:%M %p")
-                elif curArtPubDate.find("»") >= 0:
-                    # timeformat magic from "» 29 Dec 2017 13:46" to datetime()
-                    curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate, "» %d %m %Y %H:%M")
-                else:
-                    # timeformat magic from "03 mär, 2019 16:26" to datetime()
-                    curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate, "%d %m, %Y %H:%M")
+                curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, "Eile", "%d-%m-%y", offSetDays=-1)
+                curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, "Täna", "%d-%m-%y", offSetDays=0)
+                curArtPubDate = parsers_datetime.guess_datetime(curArtPubDate)
                 articleDataDict["pubDates"].append(curArtPubDate)
 
                 # title
-                articleDataDict["titles"].append(articlesTitles[i] + " @" + parsers_common.simplify_link(domain))
+                curArtTitle = parsers_common.title_at_domain(articlesTitles[i], domain)
+                articleDataDict["titles"].append(curArtTitle)
 
                 # url
                 curArtUrl = articlesPostsUrls[j]
                 curArtUrl = curArtUrl.split("&sid=")[0]
-                if curArtUrl.find("#") < 0:
+                if "#" not in curArtUrl:
                     rss_print.print_debug(__file__, "lisame lingi lõppu puuduva:" + "#" + articlesPostsUrls[j].split("#")[1], 0)
                     curArtUrl = curArtUrl + "#" + articlesPostsUrls[j].split("#")[1]
                 articleDataDict["urls"].append(curArtUrl)
+
+                rss_print.print_debug(__file__, "teema postitus nr. " + str(j + 1) + "/(" + str(len(articlesPostsUrls)) + ") on " + articlesPostsUrls[j], 2)
 
     # remove unwanted content
     dictBlacklist = ["jumal ", "Jumal "]

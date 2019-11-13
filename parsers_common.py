@@ -4,32 +4,15 @@
     Erinevate parserid ja funktsioonid
 """
 
-from datetime import datetime
-from datetime import timedelta
-from email import utils
-from lxml import html
+from html import unescape
+from lxml import html  # sudo apt install python3-lxml
 import re
-import time
 
 import rss_config
 import rss_disk
 import rss_makereq
 import rss_print
-
-
-def add_missing_date_to_string(curDatetimeString, fullDatetimeFormat, addedDateFormat):
-    if len(curDatetimeString) < len(fullDatetimeFormat):
-        curDatetimeString = add_to_time_string(curDatetimeString, addedDateFormat)
-        rss_print.print_debug(__file__, "lisasime ajale 'kuupäeva' osa: " + curDatetimeString, 3)
-
-    return curDatetimeString
-
-
-def add_to_time_string(curArtPubDate, curDateFormat):
-    curArtPubDate = datetime.now().strftime(curDateFormat) + curArtPubDate
-    rss_print.print_debug(__file__, "lisasime tänasele kellaajale kuupäeva: " + curArtPubDate, 3)
-
-    return curArtPubDate
+import rss_stat
 
 
 def article_data_dict_clean(articleDataDict, dictField, dictCond, dictWhitelist=[], dictBlacklist=[]):
@@ -106,7 +89,7 @@ def decode_bytes_to_str(inpBytes, inpEncoding):
     try:
         retString = inpBytes.decode(inpEncoding)
     except Exception as e:
-        rss_print.print_debug(__file__, "vaikimisi '" + inpEncoding + "' dekodeerimine ebaõnnestus, proovime vigade ignoreerimisega", 0)
+        rss_print.print_debug(__file__, "vaikimisi '" + inpEncoding + "' dekodeerimine EBAõnnestus, proovime vigade ignoreerimisega", 0)
         rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
         retString = inpBytes.decode(inpEncoding, "replace")
 
@@ -150,7 +133,7 @@ def domain_url(domain, articleUrl):
 
 def fix_broken_encoding(inpString):
 
-    rss_print.print_debug(__file__, "parandame ebaõnnestunud kodeeringu asendamise läbi", 1)
+    rss_print.print_debug(__file__, "parandame EBAõnnestunud kodeeringu asendamise läbi", 1)
     rss_print.print_debug(__file__, "input inpString: '" + inpString + "'", 5)
 
     inpString = inpString.replace("\\\\x", "\\x")
@@ -187,7 +170,7 @@ def fix_broken_encoding_as_encoding_string(inpString, sourceEncoding, destEncodi
     http://i18nqa.com/debug/UTF8-debug.html
     """
 
-    rss_print.print_debug(__file__, "ebaõnnestunud '" + sourceEncoding + "' as '" + destEncoding + "' kodeeringu parandamine 'tagasiasendamisega'", 1)
+    rss_print.print_debug(__file__, "EBAõnnestunud '" + sourceEncoding + "' as '" + destEncoding + "' kodeeringu parandamine 'tagasiasendamisega'", 1)
     rss_print.print_debug(__file__, "inpString: '" + inpString + "'", 4)
 
     for curInt in range(0x80, 383):  # ž on 382 ja selle juures lõpetame
@@ -289,176 +272,103 @@ def fix_drunk_post(drunkPostString):
     return drunkPostString
 
 
-def float_to_datetime(floatDateTime, rawDateTimeSyntax):
-    """
-    Teeb sissentud ajatekstist ja süntaksist datetime tüüpi aja
-    rawDateTimeText = aeg teksti kujul, näiteks: "23. 11 2007 /"
-    rawDateTimeSyntax = selle teksti süntaks, näiteks "%d. %m %Y /"
-    Süntaksi seletus: https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
-    """
+def fix_quatation_tags(inpString, oldTagStart, oldTagEnd, newTagStart, newTagEnd):
+    if oldTagStart not in inpString:
+        rss_print.print_debug(__file__, "ei leidnud oldTagStart = '" + oldTagStart + "', lõpetame", 4)
+        return inpString
+    rss_print.print_debug(__file__, "leidsime oldTagStart = '" + oldTagStart + "', tegeleme", 3)
 
-    rss_print.print_debug(__file__, "floatDateTime = '" + str(floatDateTime) + "'", 5)
-    rss_print.print_debug(__file__, "rawDateTimeSyntax = '" + rawDateTimeSyntax + "'", 5)
-    datetimeRFC2822 = utils.formatdate(floatDateTime, True, True)
-    rss_print.print_debug(__file__, "datetimeRFC2822 = '" + str(datetimeRFC2822) + "'", 4)
+    # algus                                                     # <div class="quotecontent">
+    oldTagStartNice = oldTagStart.split("<")[1].split(">")[0]   # div class="quotecontent"
+    oldTagStartList = oldTagStartNice.split(" ")                # div, class="quotecontent"
+    oldTagStartList1 = oldTagStartList[1].split("=")            # class, "quotecontent"
+    oldTagStartList1[1] = oldTagStartList1[1].strip('"')        # quotecontent
 
-    return datetimeRFC2822
+    newTagStartNice = newTagStart.split("<")[1].split(">")[0]
 
+    pageTree = html_tree_from_string(inpString, "")
+    elements = pageTree.iter(oldTagStartList[0])
 
-def format_tags(htmlString, searchTagStart, searchTagEnd, addedTagStart, addedTagEnd):
-    if (htmlString.find(searchTagStart) < 0):
-        rss_print.print_debug(__file__, "ei leidnud searchTagStart = '" + str(searchTagStart) + "', lõpetame", 4)
-        return htmlString
+    for el in elements:
+        rss_print.print_debug(__file__, "fix_quatation_tags: '" + oldTagStart + "' kontrollime elementi: " + str(el.tag), 4)
+        elAttributes = el.attrib
 
-    rss_print.print_debug(__file__, "leidsime searchTagStart = '" + str(searchTagStart) + "', tegeleme", 4)
+        if elAttributes:
+            rss_print.print_debug(__file__, "fix_quatation_tags: '" + oldTagStart + "' kontrollime elemendi attribuuti: " + str(elAttributes), 4)
+            rss_print.print_debug(__file__, "fix_quatation_tags: '" + oldTagStart + "' kontrollime elemendi attribuuti: " + str(oldTagStartList1[0]) + " ?= " + str(oldTagStartList1[1]), 4)
 
-    rss_print.print_debug(__file__, "\n inpHtmlString = \n'" + str(htmlString) + "'\n", 2)
+            if elAttributes[oldTagStartList1[0]] == oldTagStartList1[1]:
+                rss_print.print_debug(__file__, "fix_quatation_tags: '" + oldTagStart + "' leidsime elemendi attribuudi: " + str(elAttributes), 3)
+                el.tag = newTagStartNice
+                rss_print.print_debug(__file__, "fix_quatation_tags: '" + oldTagStart + "' muudetud tag: <" + str(el.tag) + ">", 2)
 
-    # splitime lõpu järgi
-    inpStringSplittedByEnd = htmlString.split(searchTagEnd)
-    countEnds = len(inpStringSplittedByEnd)
+    inpString = html_to_string(pageTree, prettyPrint=False)
 
-    if countEnds == 0:
-        rss_print.print_debug(__file__, "lõpu(" + searchTagEnd + ") leide: " + str(countEnds) + ", lõpetame", 0)
-        return htmlString
-    if countEnds == 1:
-        rss_print.print_debug(__file__, "lõpu(" + searchTagEnd + ") leide: " + str(countEnds) + "", 1)
-    else:
-        rss_print.print_debug(__file__, "lõpu(" + searchTagEnd + ") leide: " + str(countEnds) + "", 4)
+    # remove html and body elements
+    inpString = html_string_children(inpString)
+    inpString = html_string_children(inpString)
 
-    iAlreadyChanged = -1
-    for i in range(countEnds - 1):
-        rss_print.print_debug(__file__, "[" + str(i) + "] inpStringSplittedByEnd[" + str(i) + "] = \n'" + str(inpStringSplittedByEnd[i]) + "'", 2)
-
-        if (i == iAlreadyChanged):
-            rss_print.print_debug(__file__, "[" + str(i) + "] juba muudetud väärtus: inpStringSplittedByEnd[" + str(i) + "] = \n'" + str(inpStringSplittedByEnd[i]) + "', liigume järgmisele", 2)
-            continue
-        if (inpStringSplittedByEnd[i].find(searchTagStart) < 0):
-            rss_print.print_debug(__file__, "[" + str(i) + "] ei leidnud searchTagStart = '" + str(searchTagStart) + "', liigume järgmisele", 4)
-            continue
-        else:
-            rss_print.print_debug(__file__, "[" + str(i) + "] leidsime searchTagStart = '" + str(searchTagStart) + "', tegeleme", 4)
-
-        splitByEndStringSplitByStart = inpStringSplittedByEnd[i].split(searchTagStart)
-
-        countEndStarts = len(splitByEndStringSplitByStart)  # siin esimene ei loe
-
-        if countEndStarts - 1 > 1:
-            rss_print.print_debug(__file__, "[" + str(i) + "] algus(" + searchTagStart + ") leide: " + str(countEndStarts - 1) + "", 0)
-        elif countEndStarts - 1 == 1:
-            rss_print.print_debug(__file__, "[" + str(i) + "] algus(" + searchTagStart + ") leide: " + str(countEndStarts - 1) + "", 3)
-        else:
-            rss_print.print_debug(__file__, "[" + str(i) + "] algus(" + searchTagStart + ") leide: " + str(countEndStarts - 1) + "", 0)
-
-        # paneme alguse paika
-        splitByEndStringSplitByStart[1] = addedTagStart + splitByEndStringSplitByStart[1]
-
-        # genereerime otsinguks lõputägist nn algusttagi
-        searchStartTagFromSearchEnd = searchTagEnd.replace("</", "<").replace(">", "") + " "
-
-        for j in range(countEndStarts):
-            curNr = "[" + str(i) + "][" + str(j) + "/" + str(countEndStarts - 1) + "]"
-            rss_print.print_debug(__file__, curNr + " asume uurima: splitByEndStringSplitByStart[" + str(j) + "] = '" + str(splitByEndStringSplitByStart[j]) + "'", 4)
-
-            if (splitByEndStringSplitByStart[j] == ""):
-                continue
-            elif (splitByEndStringSplitByStart[j].find(searchStartTagFromSearchEnd) < 0):
-                # sisus div-e juurde ei tuld, saame rahus lõpetada
-                rss_print.print_debug(__file__, curNr + " ei leitud algustäg(" + searchStartTagFromSearchEnd + "): splitByEndStringSplitByStart[" + str(j) + "] = '" + str(splitByEndStringSplitByStart[j]) + "'", 2)
-                splitByEndStringSplitByStart[j] = splitByEndStringSplitByStart[j] + addedTagEnd
-                rss_print.print_debug(__file__, curNr + " lõppu lisatud: splitByEndStringSplitByStart[" + str(j) + "] = '" + str(splitByEndStringSplitByStart[j]) + "'", 2)
-                break
-            elif (j == countEndStarts - 1):
-                # sisus tuli div-e juurde, aga oleme lõpus, peame liikuma edasi
-                rss_print.print_debug(__file__, curNr + " viimasest leitud algustäg(" + searchStartTagFromSearchEnd + "): splitByEndStringSplitByStart[" + str(j) + "] = '" + str(splitByEndStringSplitByStart[j]) + "'", 2)
-                for k in range(i + 1, countEnds - 1):
-                    rss_print.print_debug(__file__, curNr + "[" + str(k) + "] liigume sammu edasi", 4)
-                    inpStringSplittedByEnd[k] = addedTagEnd + inpStringSplittedByEnd[k]
-                    rss_print.print_debug(__file__, curNr + "[" + str(k) + "] muudetud järgmine inpStringSplittedByEnd[" + str(k) + "] = '" + str(inpStringSplittedByEnd[k]) + "'", 2)
-                    iAlreadyChanged = k
-                    break
-            else:
-                rss_print.print_debug(__file__, curNr + " leitud algustäg(" + searchStartTagFromSearchEnd + "): splitByEndStringSplitByStart[" + str(j) + "] = '" + str(splitByEndStringSplitByStart[j]) + "'", 0)
-                # peame liikuma kindlasti edasi
-
-        # paneme tükid kokku tagasi
-        inpStringSplittedByEnd[i] = searchTagStart.join(splitByEndStringSplitByStart)
-        rss_print.print_debug(__file__, "[" + str(i) + "] kokkupandud inpStringSplittedByEnd[" + str(i) + "] = '" + str(inpStringSplittedByEnd[i]) + "'", 2)
-
-    htmlString = searchTagEnd.join(inpStringSplittedByEnd)
-    rss_print.print_debug(__file__, "\n outHtmlString = \n'" + str(htmlString) + "'\n", 2)
-
-    return htmlString
+    return inpString
 
 
-def get_article_string(session, domainText, articleUrl, noCache):
-    """
-    Artikli sisu hankimine cachest või internetist
-    """
+def get_article_tree(session, curDomainShort, curDomainLong, noCache):
 
-    # kontrollime urli korrektsust
-    if (articleUrl.find('http', 0, 4) == -1):
-        rss_print.print_debug(__file__, "lingist ei leitud http-d: " + str(articleUrl), 3)
-        articleUrl = domain_url(domainText, articleUrl)
+    # kontrollime url-i korrektsust
+    if curDomainLong.find('http', 0, 4) != 0:
+        rss_print.print_debug(__file__, "lingist ei leitud http-d: " + str(curDomainLong), 1)
+        curDomainLong = domain_url(curDomainShort, curDomainLong)
 
-    # tegutseme vastavalt poliitikale
+    # tegutseme vastavalt poliitikale - artikli sisu hankimine cachest või internetist
     if (rss_config.ARTICLE_CACHE_POLICY == 'all'):
         # hangime alati kettalt, või tagastame tühja sisu
-        rss_print.print_debug(__file__, "ei päri kunagi internetist: " + articleUrl, 1)
-        htmlPageString = rss_disk.get_url_string_from_cache(articleUrl)
+        rss_print.print_debug(__file__, "ei päri internetist: " + curDomainLong, 2)
+        htmlPageString = rss_disk.get_url_string_from_cache(curDomainLong)
     elif (rss_config.ARTICLE_CACHE_POLICY == 'auto'):
         if noCache is True:
-            rss_print.print_debug(__file__, "nocache==" + str(noCache) + ", põhilehekülg tuleb alati alla laadida Internetist: " + articleUrl, 2)
-            htmlPageString = rss_makereq.get_url_as_html_string(session, articleUrl)
+            rss_print.print_debug(__file__, "nocache==" + str(noCache) + ", põhilehekülg tuleb alati alla laadida Internetist: " + curDomainLong, 3)
+            htmlPageString = rss_makereq.get_url_string_from_internet(session, curDomainShort, curDomainLong)
         else:
             # proovime kõigepealt hankida kettalt
-            rss_print.print_debug(__file__, "nocache==" + str(noCache) + ", proovime enne internetipäringut kettalt lugeda: " + articleUrl, 2)
-            htmlPageString = rss_disk.get_url_string_from_cache(articleUrl)
+            rss_print.print_debug(__file__, "nocache==" + str(noCache) + ", proovime enne internetipäringut kettalt lugeda: " + curDomainLong, 3)
+            htmlPageString = rss_disk.get_url_string_from_cache(curDomainLong)
 
             if htmlPageString != "":
-                rss_print.print_debug(__file__, "lugesime enne internetipäringut kettalt: " + articleUrl, 1)
+                rss_print.print_debug(__file__, "lugesime enne internetipäringut kettalt: " + curDomainLong, 3)
             else:
-                rss_print.print_debug(__file__, "ei õnnestunud kettalt lugeda, pärime internetist: " + articleUrl, 1)
-
                 # teeme internetipäringu
-                htmlPageString = rss_makereq.get_url_as_html_string(session, articleUrl)
+                rss_print.print_debug(__file__, "ei õnnestunud kettalt lugeda, pärime internetist: " + curDomainLong, 1)
+                htmlPageString = rss_makereq.get_url_string_from_internet(session, curDomainShort, curDomainLong)
     elif (rss_config.ARTICLE_CACHE_POLICY == 'off'):
         # teeme alati internetipäringu
-        rss_print.print_debug(__file__, "pärime alati internetist: " + articleUrl, 1)
-        htmlPageString = rss_makereq.get_url_as_html_string(session, articleUrl)
+        rss_print.print_debug(__file__, "pärime alati internetist: " + curDomainLong, 1)
+        htmlPageString = rss_makereq.get_url_string_from_internet(session, curDomainShort, curDomainLong)
     else:
         rss_print.print_debug(__file__, "tundmatu allalaadimise poliitika rss_config.ARTICLE_CACHE_POLICY: " + rss_config.ARTICLE_CACHE_POLICY, 0)
 
+    # puhastame lehe üleliigsest jamast
+    htmlPageString = html_page_cleanup(htmlPageString)
+
     # fix link addresses
     htmlPageString = htmlPageString.replace('src="//', 'src="http://')
-    htmlPageString = htmlPageString.replace('src="./', 'src="' + domainText + '/')
-    htmlPageString = htmlPageString.replace('src="/', 'src="' + domainText + '/')
+    htmlPageString = htmlPageString.replace('src="./', 'src="' + curDomainShort + '/')
+    htmlPageString = htmlPageString.replace('src="/', 'src="' + curDomainShort + '/')
     htmlPageString = htmlPageString.replace('href="//', 'href="http://')
-    htmlPageString = htmlPageString.replace('href="./', 'href="' + domainText + '/')
-    htmlPageString = htmlPageString.replace('href="/', 'href="' + domainText + '/')
-
-    return htmlPageString
-
-
-def get_article_tree(session, domainText, articleUrl, noCache):
-    # hangib lehe cachest või netist
-    htmlPageString = get_article_string(session, domainText, articleUrl, noCache)
-
-    # puhastab lehe üleliigsest jamast
-    htmlPageString = html_string_cleanup(htmlPageString)
+    htmlPageString = htmlPageString.replace('href="./', 'href="' + curDomainShort + '/')
+    htmlPageString = htmlPageString.replace('href="/', 'href="' + curDomainShort + '/')
+    rss_print.print_debug(__file__, "html string: " + htmlPageString, 5)
 
     # loob edaspidiseks html objekti
-    htmlPageTree = html_tree_from_string(htmlPageString, articleUrl)
+    htmlPageTree = html_tree_from_string(htmlPageString, curDomainLong)
 
     return htmlPageTree
 
 
-def html_string_cleanup(htmlPageString):
+def html_page_cleanup(htmlPageString):
     '''
     Puhastame üleliigsest prügist: js, style jne
     '''
 
-    # remove style
+    # remove styles
     htmlPageString = re.sub(r"<style[\s\S]*?<\/style>", "", htmlPageString)
 
     # remove scripts
@@ -469,18 +379,19 @@ def html_string_cleanup(htmlPageString):
 
     # remove scripts from links
     htmlPageString = re.sub(r' onclick=(\")[\s\S]*?(\")', "", htmlPageString)
-
-    # eemaldame html-i vahelise whitespace-i
-    htmlPageString = re.sub(r"\s\s+(?=<)", "", htmlPageString)
+    htmlPageString = re.sub(r" onclick=(')[\s\S]*?(')", "", htmlPageString)
 
     # remove trackers from links
-    htmlPageString = re.sub(r'&_[a-zA-Z0-9_-]*', "", htmlPageString)  # delfi
+    htmlPageString = re.sub(r'(&|\?)_[0-9A-Za-z_-]*', "", htmlPageString)  # delfi
     htmlPageString = re.sub(r'_ga=[0-9.-]*', "", htmlPageString)
     htmlPageString = re.sub(r'fbclid=[0-9A-Za-z-]*', "", htmlPageString)
     htmlPageString = re.sub(r'gclid=[0-9A-Za-z-_]*', "", htmlPageString)
     htmlPageString = re.sub(r'utm_source=[0-9A-Za-z-.&_=]*', "", htmlPageString)
     htmlPageString = re.sub(r'utm_source=pm_fb[0-9A-Za-z&_=]*', "", htmlPageString)
     htmlPageString = htmlPageString.replace("?&", "?")
+
+    # eemaldame html-i vahelise whitespace-i
+    htmlPageString = re.sub(r"\s\s+(?=<)", "", htmlPageString)
 
     # eemaldame allesjäänud tühikud
     htmlPageString = htmlPageString.replace('\\n', ' ')
@@ -490,33 +401,97 @@ def html_string_cleanup(htmlPageString):
 
     # remove useless space
     htmlPageString = htmlPageString.replace("<br/>", "<br>")
+    htmlPageString = htmlPageString.replace(" <br>", "<br>")
     htmlPageString = htmlPageString.replace("<br><br>", "<br>")
-
-    # add newline
-    htmlPageString = htmlPageString.replace("<strong>", "<br><strong>")
-
-    # add space
-    htmlPageString = htmlPageString.replace("</p>", "</p> ")
-    htmlPageString = htmlPageString.replace("</td>", "</td> ")
 
     return htmlPageString
 
 
-def html_to_string(htmlNode):
+def html_post_cleanup(htmlPostString):
+
+    # remove attributes
+    htmlPostString = re.sub(r' alt=(\")[\s\S]*?(\")', "", htmlPostString)
+    htmlPostString = re.sub(r' class=(\")[\s\S]*?(\")', "", htmlPostString)
+    htmlPostString = re.sub(r' id=(\")[\s\S]*?(\")', "", htmlPostString)
+    htmlPostString = re.sub(r' rel=(\")[\s\S]*?(\")', "", htmlPostString)
+    htmlPostString = re.sub(r' style=(\")[\s\S]*?(\")', "", htmlPostString)
+    htmlPostString = re.sub(r' target=(\")[\s\S]*?(\")', "", htmlPostString)
+    htmlPostString = re.sub(r' zoompage-fontsize=(\")[\s\S]*?(\")', "", htmlPostString)
+
+    # remove elements
+    htmlPostString = htmlPostString.replace("<hr>", "")
+    htmlPostString = re.sub(r'<span[\s\S]*?>', "", htmlPostString)
+    htmlPostString = htmlPostString.replace("</span>", "")
+
+    # change elements
+    htmlPostString = htmlPostString.replace("<strong>", "<b>")
+    htmlPostString = htmlPostString.replace("</strong>", "</b>")
+    htmlPostString = htmlPostString.replace("<blockquote><br>", "<blockquote>")
+    htmlPostString = htmlPostString.replace("</blockquote><br>", "</blockquote>")
+    htmlPostString = htmlPostString.replace("<td ", "<p ")
+    htmlPostString = htmlPostString.replace("</td>", "</p>")
+
+    # br
+    htmlPostString = htmlPostString.replace(" <br>", "<br>")
+    htmlPostString = htmlPostString.replace("<br><br>", "<br>")
+
+    # div
+    htmlPostString = htmlPostString.replace("<div></div>", "")
+
+    # i
+    htmlPostString = htmlPostString.replace("<i></i>", "")
+
+    # p
+    htmlPostString = htmlPostString.replace("<p></p>", "")
+    htmlPostString = htmlPostString.replace("<p> ", "<p>")
+    htmlPostString = htmlPostString.replace(" </p>", "</p>")
+
+    return htmlPostString
+
+
+def html_string_children(htmlString):
+
+    if not isinstance(htmlString, str):
+        rss_print.print_debug(__file__, "html_string_children() sisend pole string, tagastame tühjuse", 0)
+        return ""
+
+    if "</" not in htmlString:
+        rss_print.print_debug(__file__, "html_string_children() sisendis pole child elementi, tagastame sisendi", 0)
+        return htmlString
+
+    tagOpening = htmlString.find(">") + 1
+    tagClosing = htmlString.rfind("<")
+
+    # lõikame stringist vajaliku osa
+    htmlString = htmlString[tagOpening:tagClosing]
+
+    return htmlString
+
+
+def html_to_string(htmlNode, prettyPrint=False):
+
     if isinstance(htmlNode, str):
         rss_print.print_debug(__file__, "sisend on juba string, tagastame sisendi", 0)
         rss_print.print_debug(__file__, "sisend on juba string: htmlNode = " + htmlNode, 3)
         return htmlNode
 
-    stringAsBytes = html.tostring(htmlNode)
-    string = str(stringAsBytes)
-    return string
+    htmlStringAsBytes = html.tostring(htmlNode, encoding="unicode", pretty_print=prettyPrint)
+
+    htmlString = str(htmlStringAsBytes)
+    htmlString = unescape(htmlString)
+    rss_print.print_debug(__file__, "htmlString = " + htmlString, 4)
+
+    return htmlString
 
 
 def html_tree_from_string(htmlPageString, articleUrl):
+
+    rss_print.print_debug(__file__, "asume looma html objekti: " + articleUrl, 3)
+
     if (htmlPageString == ""):
         rss_print.print_debug(__file__, "puudub html stringi sisu leheküljel: " + articleUrl, 0)
         htmlTree = html.fromstring("<html><head></head></html>")
+        return htmlTree
 
     try:
         htmlTree = html.document_fromstring(htmlPageString)
@@ -542,7 +517,7 @@ def lchop(inpString, stripString):
     # constant
     stripStringLen = len(stripString)
 
-    while (inpString.find(stripString) == 0):
+    while (inpString.startswith(stripString)):
         inpString = inpString[stripStringLen:]
         rss_print.print_debug(__file__, "eemaldasime algusest stringi: '" + str(stripString) + "'", 4)
 
@@ -566,65 +541,6 @@ def months_to_int(rawDateTimeText):
     return rawDateTimeText
 
 
-def raw_to_datetime(rawDateTimeText, rawDateTimeSyntax):
-    """
-    Teeb sissentud ajatekstist ja süntaksist datetime tüüpi aja
-    rawDateTimeText = aeg teksti kujul, näiteks: "23. 11 2007 /"
-    rawDateTimeSyntax = selle teksti süntaks, näiteks "%d. %m %Y /"
-    Süntaksi seletus: https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
-    """
-
-    curDateTimeText = rawDateTimeText
-    curDateTimeText = curDateTimeText.strip()
-    curDateTimeText = lchop(curDateTimeText, "\\t")
-    curDateTimeText = rchop(curDateTimeText, "\\r\\n")
-
-    if (curDateTimeText == ""):
-        rss_print.print_debug(__file__, "ajasisend tühi: curDateTimeText = '" + curDateTimeText + "'", 0)
-    else:
-        rss_print.print_debug(__file__, "curDateTimeText = '" + curDateTimeText + "'", 5)
-
-    if (rawDateTimeSyntax == ""):
-        rss_print.print_debug(__file__, "ajasisend tühi: rawDateTimeSyntax = '" + rawDateTimeSyntax + "'", 0)
-    else:
-        rss_print.print_debug(__file__, "rawDateTimeSyntax = '" + rawDateTimeSyntax + "'", 5)
-
-    datetimeFloat = raw_to_float(curDateTimeText, rawDateTimeSyntax)
-    datetimeRFC2822 = float_to_datetime(datetimeFloat, rawDateTimeSyntax)
-
-    return datetimeRFC2822
-
-
-def raw_to_float(rawDateTimeText, rawDateTimeSyntax):
-    """
-    Teeb sissentud ajatekstist ja süntaksist float tüüpi aja
-    rawDateTimeText = aeg teksti kujul, näiteks: "23. 11 2007 /"
-    rawDateTimeSyntax = selle teksti süntaks, näiteks "%d. %m %Y /"
-    Süntaksi seletus: https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
-    """
-
-    curDateTimeText = rawDateTimeText.strip()
-    if (curDateTimeText == ""):
-        rss_print.print_debug(__file__, "ajasisend tühi: curDateTimeText = '" + curDateTimeText + "'", 0)
-        return 0
-
-    datetimeStruct = time.strptime(curDateTimeText, rawDateTimeSyntax)
-    datetimeList = list(datetimeStruct)
-
-    if datetimeList[0] == 1900:
-        if datetimeList[1] > int(time.strftime('%m')):
-            rss_print.print_debug(__file__, "muudame puuduva aasta eelmiseks aastaks", 0)
-            datetimeList[0] = int(time.strftime('%Y')) - 1
-        else:
-            rss_print.print_debug(__file__, "muudame puuduva aasta praeguseks aastaks", 0)
-            datetimeList[0] = int(time.strftime('%Y'))
-
-    datetimeTuple = tuple(datetimeList)
-    datetimeFloat = time.mktime(datetimeTuple)
-
-    return datetimeFloat
-
-
 def remove_weekday_strings(rawDateTimeText):
     rawDateTimeText = rawDateTimeText.replace('  ', ' ').strip().lower()
     # est
@@ -632,14 +548,6 @@ def remove_weekday_strings(rawDateTimeText):
     rawDateTimeText = rawDateTimeText.replace('neljapäev', "").replace('reede', "").replace('laupäev', "").replace('pühapäev', "")
 
     return rawDateTimeText
-
-
-def replace_string_with_timeformat(inpString, stringToReplace, dateTimeformat, offSetDays=0):
-    if (inpString.find(stringToReplace) >= 0):
-        inpString = inpString.replace(stringToReplace, str((datetime.now() + timedelta(days=offSetDays)).strftime(dateTimeformat)))
-        rss_print.print_debug(__file__, "asendasime stringis sõna ajaga: '" + stringToReplace + "' -> " + inpString, 3)
-
-    return inpString
 
 
 def rchop(inpString, stripString):
@@ -657,17 +565,12 @@ def rchop(inpString, stripString):
     # constant
     stripStringLen = len(stripString)
 
-    while (inpString.rfind(stripString) >= 0):
-        inpStringLen = len(inpString)
-        inpStringLenWithoutStripString = inpStringLen - stripStringLen
+    while (inpString.endswith(stripString)):
+        inpStringLenWithoutStripString = len(inpString) - stripStringLen
 
-        if (inpString.rfind(stripString) == inpStringLenWithoutStripString):
-            inpString = inpString[:inpStringLenWithoutStripString]
-            rss_print.print_debug(__file__, "eemaldasime lõpust stringi '" + str(stripString) + "': " + str(inpString), 4)
-            continue
+        inpString = inpString[:inpStringLenWithoutStripString]
+        rss_print.print_debug(__file__, "eemaldasime lõpust stringi '" + str(stripString) + "': " + str(inpString), 4)
 
-        #  default is to break after no finds
-        break
     return inpString
 
 
@@ -678,58 +581,20 @@ def simplify_link(inpString):
     return inpString
 
 
-def stringify_index_children(sourceList, index):
-    if (index >= len(sourceList)):
-        rss_print.print_debug(__file__, "sisendilistis pole indeksit " + str(index) + ", tagastame tühja sisu", 0)
-        return ""
+def title_at_domain(articleTitle, domain):
+    curTitle = rchop(articleTitle, ".")
+    curTitle += " @"
+    curTitle += simplify_link(domain)
 
-    htmlNode = sourceList[index]
-    htmlNodeChilds = stringify_children(htmlNode)
-
-    return htmlNodeChilds
+    return curTitle
 
 
-def stringify_children(htmlNode):
-    """
-    Given a LXML tag,
-    Return contents as a string
-    >>> html = "<p><strong>Sample sentence</strong> with tags.</p>"
-    >>> htmlNode = lxml.html.fragment_fromstring(html)
-    >>> extract_html_content(htmlNode)
-    "<strong>Sample sentence</strong> with tags."
-    From: https://stackoverflow.com/questions/4624062/get-all-text-inside-a-tag-in-lxml/32468202#32468202
-    """
-
-    if htmlNode is None:
-        rss_print.print_debug(__file__, "pole otsitavat parentit (htmlNode is None), tagastame tühja sisu", 1)
-        return ""
-
-    if (len(htmlNode) == 0):
-        rss_print.print_debug(__file__, "osakontroll1: (if (len(htmlNode) == 0):)", 4)
-        if not getattr(htmlNode, 'text', None):
-            rss_print.print_debug(__file__, "osakontroll2: (if not getattr(htmlNode, 'text', None):)", 4)
-            rss_print.print_debug(__file__, "pole otsitavat parentit (htmlNode-s puudub attr. 'text'), tagastame tühja sisu", 3)
-            return ""
-    if isinstance(htmlNode, str):
-        rss_print.print_debug(__file__, "stringify_children() sisend on string, ehk juba töödeldud?, katkestame töötluse", 0)
-        return htmlNode
-
-    # teeme htmli-st stringi
-    retString = html_to_string(htmlNode)
-
-    tagOpening = retString.find(">") + 1
-    tagClosing = retString.rfind("<")
-
-    # lõikame stringist vajaliku osa
-    retString = retString[tagOpening:tagClosing]
-
-    return retString
-
-
-def time_float():
-    curTimeFloat = time.time()
-
-    return curTimeFloat
+def xpath_debug(pageTree):
+    htmlTreeString = html_to_string(pageTree, prettyPrint=True)
+    htmlTreeString = htmlTreeString.split("<body ")[1]
+    htmlTreeString = htmlTreeString.split("</body>")[0]
+    htmlTreeString = "<body " + htmlTreeString + "</body>"
+    rss_disk.write_file(rss_config.PATH_FILENAME_DEBUG, htmlTreeString)
 
 
 def xpath_path_validator(xpathString, parent=False):
@@ -762,11 +627,11 @@ def xpath_path_validator(xpathString, parent=False):
         logLevelHas = 0
         logLevelNot = 5
 
-    if xpathStringEnd.find("text()") == 0:
+    if xpathStringEnd.startswith("text()"):
         rss_print.print_debug(__file__, "parent=" + str(int(parent)) + " xpath-is on 'text()': " + xpathString, logLevelHas)
-    elif xpathStringEnd.find("@") == 0:
+    elif xpathStringEnd.startswith("@"):
         rss_print.print_debug(__file__, "parent=" + str(int(parent)) + " xpath-is on '@': " + xpathString, logLevelHas)
-    elif xpathStringEnd.find("node()") == 0:
+    elif xpathStringEnd.startswith("node()"):
         rss_print.print_debug(__file__, "parent=" + str(int(parent)) + " xpath-is on 'node()': " + xpathString, logLevelHas)
     else:
         rss_print.print_debug(__file__, "parent=" + str(int(parent)) + " xpath-is puudub ('node()','text()','@'): " + xpathString, logLevelNot)
@@ -774,32 +639,65 @@ def xpath_path_validator(xpathString, parent=False):
     return xpathString
 
 
-def xpath_to_list(pageTree, xpathString, parent=False):
+def xpath_to_list(pageTree, xpathString, parent=False, count=False):
     """
     Leiab etteantud artikli lehe puust etteantud xpathi väärtuse alusel objektid
     """
 
+    if pageTree is None:
+        rss_print.print_debug(__file__, "pageTree puudub, katkestame", 0)
+
     xpathString = xpath_path_validator(xpathString, parent)
 
+    # get data
     elements = pageTree.xpath(xpathString)
+    elementsLen = len(elements)
 
-    if (parent is True):
-        rss_print.print_debug(__file__, "laseme nimekirja läbi funktsiooni stringify_index_children", 4)
-    for i in range(len(elements)):
-        # enne hangimine, kui vaja
-        if (parent is True):
-            elements[i] = stringify_index_children(elements, i)
-        # ja siis ühine strip
-        elements[i] = elements[i].strip()
-
-    if not elements:
-        rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtuste pikkus: " + str(len(elements)), 0)
-    elif len(elements) > 1:
-        rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtuste pikkus: " + str(len(elements)), 4)
+    if elementsLen == 0:
+        rss_stat.save_path(count, xpathString, found=False)
+        rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' leide: " + str(elementsLen), 1)
+    elif elementsLen == 1:
+        rss_stat.save_path(count, xpathString, found=True)
+        rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' leide: " + str(elementsLen), 3)
     else:
-        rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtuste pikkus: " + str(len(elements)), 1)
+        rss_stat.save_path(count, xpathString, found=True)
+        rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' leide: " + str(elementsLen), 3)
 
-    rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtused: elements = " + str(elements), 3)
+    for i in range(len(elements)):
+
+        if (i >= len(elements)):
+            rss_print.print_debug(__file__, "sisendilistis pole indeksit " + str(i) + ", tagastame tühja sisu", 0)
+            return ""
+
+        elem = elements[i]
+
+        if elem is None:
+            rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtus[" + str(i) + "] is None, tagastame tühja sisu", 0)
+            elements[i] = ""
+        elif not isinstance(elem, str):
+            rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtus[" + str(i) + "] pole string: " + str(elem), 3)
+            # teeme tekstiks
+            elem = html_to_string(elem, prettyPrint=False)
+            rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtus[" + str(i) + "] stringimise järel: " + elem, 4)
+
+        if "</" in elem:
+            if parent is True:
+                # eemaldame ülemelemendi vaikselt
+                rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtus[" + str(i) + "] on hoitatud parent: " + elem, 3)
+                elem = html_string_children(elem)
+            else:
+                # eemaldame ülemelemendi lärmakalt
+                rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtus[" + str(i) + "] on hoiatamata parent?: " + elem, 0)
+                elem = html_string_children(elem)
+        else:
+            if parent is True:
+                # eemaldame ülemelemendi vaikselt
+                rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtus[" + str(i) + "] on valestimääratud parent?: " + elem, 0)
+
+        # ja siis ühine strip
+        elements[i] = elem.strip()
+
+    rss_print.print_debug(__file__, "xpath_to_list: '" + xpathString + "' väärtused: elements = " + str(elements), 4)
 
     return elements
 
@@ -827,25 +725,64 @@ def xpath_to_list_devel(pageTree, xpathString, parent=False):
         xpathString = "//" + "/".join(xpathString.replace("/html", "//").split("/")[3:])
 
 
-def xpath_to_single(pageTree, xpathString, parent=False, combine=False):
+def xpath_to_single(pageTree, xpathString, parent=False, count=False, multi=False):
     """
-
     Leiab etteantud artikli lehe puust etteantud xpathi väärtuse alusel objekt
     """
 
+    if pageTree is None:
+        rss_print.print_debug(__file__, "pageTree puudub, katkestame", 0)
+        return ""
+
     xpathString = xpath_path_validator(xpathString, parent)
 
-    element = next(iter(pageTree.xpath(xpathString) or [""]), None)
+    # get data
+    elements = pageTree.xpath(xpathString)
+    elementsLen = len(elements)
 
-    if (parent is True):
-        element = stringify_children(element)
+    if elementsLen == 0:
+        rss_stat.save_path(count, xpathString, found=False)
+        rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' leide: " + str(elementsLen), 2)
+    elif elementsLen == 1:
+        rss_stat.save_path(count, xpathString, found=True)
+        rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' leide: " + str(elementsLen), 3)
+    else:
+        rss_stat.save_path(count, xpathString, found=True)
+        if multi is False:
+            rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' oodati ühte, leide: " + str(elementsLen), 0)
+            elementsLen = 1
+        else:
+            rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' leide: " + str(elementsLen), 3)
 
-    if not element:
-        rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtuse pikkus: " + str(len(element)), 2)
-        element = ""
-    elif len(element) > 1:
-        rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtuse pikkus: " + str(len(element)), 4)
+    element = ""
+    for i in range(elementsLen):
+        elem = elements[i]
 
-    rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtuse: '" + str(element) + "'", 3)
+        if elem is None:
+            rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtus[" + str(i) + "] is None, tagastame tühja sisu", 0)
+            elem = ""
+        if not isinstance(elem, str):
+            rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtus[" + str(i) + "] pole string: " + str(elem), 3)
+            # teeme tekstiks
+            elem = html_to_string(elem, prettyPrint=False)
+            rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtus[" + str(i) + "] stringimise järel: " + elem, 4)
+
+        if "</" in elem:
+            if parent is True:
+                # eemaldame ülemelemendi vaikselt
+                rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtus[" + str(i) + "] on hoitatud parent: " + elem, 3)
+                elem = html_string_children(elem)
+            else:
+                # eemaldame ülemelemendi lärmakalt
+                rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtus[" + str(i) + "] on hoiatamata parent?: " + elem, 0)
+                elem = html_string_children(elem)
+        else:
+            if parent is True:
+                # eemaldame ülemelemendi vaikselt
+                rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väärtus[" + str(i) + "] on valestimääratud parent?: " + elem, 0)
+
+        element = element + elem
+
+    rss_print.print_debug(__file__, "xpath_to_single: '" + xpathString + "' väljund: '" + element + "'", 4)
 
     return element

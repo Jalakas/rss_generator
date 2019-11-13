@@ -9,3 +9,5 @@ serverside/
 rss_config.py
 geckodriver
 geckodriver.log
+statistics/
+profile_rss_generator.sh

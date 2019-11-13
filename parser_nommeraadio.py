@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
-"""
-    RSS-voo sisendite parsimine
-"""
-
+import parsers_datetime
 import parsers_common
 
 
@@ -19,7 +16,7 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
         # timeformat magic from "15.12.2017 - L" to datetime()
         curArtPubDate = articleDataDict["pubDates"][i]
         curArtPubDate = curArtPubDate.split('-')[0]
-        curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate, "%d.%m.%Y")
+        curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d.%m.%Y")
         articleDataDict["pubDates"][i] = curArtPubDate
 
     return articleDataDict

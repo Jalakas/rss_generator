@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import parsers_datetime
 import parsers_common
 import rss_config
 import rss_print
@@ -13,8 +14,8 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # timeformat magic from "24.12.2017 17:51" to datetime()
-        curArtPubDate = parsers_common.months_to_int(articleDataDict["pubDates"][i])
-        curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate, "%d.%m.%Y, %H:%M")
+        curArtPubDate = articleDataDict["pubDates"][i]
+        curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d.%m.%Y, %H:%M")
         articleDataDict["pubDates"][i] = curArtPubDate
 
         if (rss_config.GET_ARTICLE_BODIES is True and i < rss_config.MAX_ARTICLE_BODIES):
@@ -22,81 +23,94 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
             pageTree = parsers_common.get_article_tree(session, domain, articleDataDict["urls"][i], noCache=False)
 
             # author
-            curArtAuthor = parsers_common.xpath_to_single(pageTree, '//span[@class="article-authors__name"]/text()')
+            curArtAuthor = parsers_common.xpath_to_single(pageTree, '//span[@class="article-authors__name"]/text()', multi=True)
             articleDataDict["authors"].append(curArtAuthor)
 
             # description1 - enne pilti
             curArtDesc1 = ""
             if curArtDesc1 == "":
-                curArtDesc1 = parsers_common.xpath_to_single(pageTree, '//article/div[@class="article"][1]/div[@class="flex"]//div[@class="article-body__item article-body__item--articleBullets"]', parent=True)
+                curArtDesc1 = parsers_common.xpath_to_single(pageTree, '//div[@class="article-body__item article-body__item--articleBullets"]', parent=True, count=True)
             if curArtDesc1 == "":
-                curArtDesc1 = parsers_common.xpath_to_single(pageTree, '//article/div[@class="article-body article-body--left article-body--lead"]/div[@class="article-body__item article-body__item--articleBullets"]', parent=True)
-            if curArtDesc1 == "":
-                curArtDesc1 = parsers_common.xpath_to_single(pageTree, '//article/div[@class="article-body"]/div[@class="article-body__item article-body__item--articleBullets article-body--first-child"]', parent=True)
+                curArtDesc1 = parsers_common.xpath_to_single(pageTree, '//div[@class="article-body__item article-body__item--video"]', parent=True, count=True)
 
             # description2 - pildi ja kuulamise vahel
             curArtDesc2 = ""
             if curArtDesc2 == "":
-                curArtDesc2 = parsers_common.xpath_to_single(pageTree, '//article/div[@class="article"][1]//div[@class="article-body__item article-body__item--htmlElement article-body__item--lead"][1]', parent=True)
+                curArtDesc2 = parsers_common.xpath_to_single(pageTree, '//div[@class="article-body__item article-body__item--htmlElement article-body__item--lead"]', parent=True, count=True, multi=True)
             if curArtDesc2 == "":
-                curArtDesc2 = parsers_common.xpath_to_single(pageTree, '//article/div[@class="article"][1]//div[@class="article-body__item article-body__item--htmlElement"]', parent=True)
-            if curArtDesc2 == "":
-                curArtDesc2 = parsers_common.xpath_to_single(pageTree, '//article/div[@class="article-body"]/div[@class="article-body__item article-body__item--htmlElement"]', parent=True)
-            if curArtDesc2 == "":
-                curArtDesc2 = parsers_common.xpath_to_single(pageTree, '//article/div[@class="article"]//div[@class="article-body article-body--left"]', parent=True)
-            if curArtDesc2 == "":
-                curArtDesc2 = parsers_common.xpath_to_single(pageTree, '//div[@class="article-body__item article-body__item--htmlElement article-body__item--lead"]', parent=True)
-            if curArtDesc2 == "":
-                curArtDesc2 = parsers_common.xpath_to_single(pageTree, '//div[@itemprop="articleBody"]/div[@itemprop="description"]', parent=True)
+                curArtDesc2 = parsers_common.xpath_to_single(pageTree, '//div[@class="article-body__item article-body__item--htmlElement article-body--first-child article-body__item--lead"]', parent=True, count=True)
 
             # description3 - pärast kuulamist
             curArtDesc3 = ""
             if curArtDesc3 == "":
-                curArtDesc3 = parsers_common.xpath_to_single(pageTree, '//article/div[@class="article"][2]//div[@class="article-body article-body--left"]', parent=True)
-            if curArtDesc3 == "":
-                curArtDesc3 = parsers_common.xpath_to_single(pageTree, '//article/div[@class="article"][1]//div[@class="article-body__item article-body__item--htmlElement"][1]', parent=True)
-            if curArtDesc3 == "":
-                curArtDesc3 = parsers_common.xpath_to_single(pageTree, '//div[@class="article-body article-body--left article-body--lead"]', parent=True)
+                if "produtsent-merle-kollom-liiguvad-suurte-lavade-poole" in articleDataDict["urls"][i]:
+                    parsers_common.xpath_debug(pageTree)
+                curArtDesc3 = parsers_common.xpath_to_single(pageTree, '//div[@class="article-body__item article-body__item--htmlElement"]', parent=True, count=True, multi=True)
+
+            # description4 - hall väljajuhatus
+            curArtDesc4 = ""
+            if curArtDesc4 == "":
+                curArtDesc4 = parsers_common.xpath_to_single(pageTree, '//div[@class="article-body__item article-body__item--htmlElement article-body--teaser"]', parent=True, count=True)
+            if curArtDesc4 == "":
+                curArtDesc4 = parsers_common.xpath_to_single(pageTree, '//div[@class="article-body__item article-body__item--gallery"]', parent=True, count=True, multi=True)
 
             # image
             curArtImg = ""
             if curArtImg == "":
-                curArtImg = parsers_common.xpath_to_single(pageTree, '//figure/img[1]/@src')
+                curArtImg = parsers_common.xpath_to_single(pageTree, '//figure[1]/img[1]/@src', count=True)
             if curArtImg == "":
-                curArtImg = parsers_common.xpath_to_single(pageTree, '//div[@class="article-body__item article-body__item--image "]//figure/img[1]/@src')
-            if curArtImg == "":
-                curArtImg = parsers_common.xpath_to_single(pageTree, '/html/body/article/div[@class="article-superheader article-superheader--figure"]/div[@class="article-superheader__background"]/@style')
+                curArtImg = parsers_common.xpath_to_single(pageTree, '//div[@class="article-superheader article-superheader--figure"]/div[@class="article-superheader__background"]/@style', count=True)
                 curArtImg = curArtImg.split("url('")[-1].strip("');")
             if curArtImg == "":
-                curArtImg = parsers_common.xpath_to_single(pageTree, '//meta[@property="og:image"]/@content')
+                curArtImg = parsers_common.xpath_to_single(pageTree, '//meta[@property="og:image"]/@content', count=True)
 
             # kontrollid
-            if articleDataDict["urls"][i].find("-kuulutused-") > 0:
+            if "-kuulutused-" in articleDataDict["urls"][i]:
                 rss_print.print_debug(__file__, "ei kontrolli plokke, kuna: kuulutused", 2)
-            elif articleDataDict["urls"][i].find("-karikatuur-") > 0:
+            elif "-karikatuur" in articleDataDict["urls"][i]:
                 rss_print.print_debug(__file__, "ei kontrolli plokke, kuna: karikatuur", 2)
             else:
                 if curArtDesc1 == "":
-                    rss_print.print_debug(__file__, "1. kirjeldusplokk on tühi. (Pildieelne kirjeldusplokk puudub?)", 2)
+                    rss_print.print_debug(__file__, "1. kirjeldusplokk on tühi. (Pildieelne loendiplokk puudub?)", 2)
                 else:
-                    rss_print.print_debug(__file__, "curArtDesc1 = " + curArtDesc1, 3)
+                    rss_print.print_debug(__file__, "curArtDesc1 = " + curArtDesc1, 4)
                 if curArtDesc2 == "":
                     rss_print.print_debug(__file__, "2. kirjeldusplokk on tühi. (Pildi järel, enne kuulamist plokk puudub?)", 0)
                 else:
-                    rss_print.print_debug(__file__, "curArtDesc2 = " + curArtDesc2, 3)
+                    rss_print.print_debug(__file__, "curArtDesc2 = " + curArtDesc2, 4)
                 if curArtDesc3 == "":
-                    rss_print.print_debug(__file__, "3. kirjeldusplokk on tühi. (Pärast kuulamist plokk puudub? - Ainult tellijale leht?)", 1)
+                    rss_print.print_debug(__file__, "3. kirjeldusplokk on tühi. (Pärast kuulamist plokk puudub?)", 0)
                 else:
-                    rss_print.print_debug(__file__, "curArtDesc3 = " + curArtDesc3, 3)
+                    rss_print.print_debug(__file__, "curArtDesc3 = " + curArtDesc3, 4)
+                if curArtDesc4 == "":
+                    rss_print.print_debug(__file__, "4. kirjeldusplokk on tühi. (Hall fadeout plokk puudub?)", 2)
+                else:
+                    rss_print.print_debug(__file__, "curArtDesc4 = " + curArtDesc4, 4)
                 if curArtImg == "":
                     rss_print.print_debug(__file__, "pilti ei leitud.", 0)
                 else:
-                    rss_print.print_debug(__file__, "curArtImg = " + curArtImg, 3)
+                    rss_print.print_debug(__file__, "curArtImg = " + curArtImg, 4)
+                if curArtDesc1 != "" and curArtDesc1 == curArtDesc2:
+                    rss_print.print_debug(__file__, "1. ja 2. kirjeldusplokk langevad kokku", 0)
+                    rss_print.print_debug(__file__, "curArtDesc1 = " + curArtDesc1, 1)
+                    rss_print.print_debug(__file__, "curArtDesc2 = " + curArtDesc2, 1)
+                if curArtDesc2 != "" and curArtDesc2 == curArtDesc3:
+                    rss_print.print_debug(__file__, "2. ja 3. kirjeldusplokk langevad kokku", 0)
+                    rss_print.print_debug(__file__, "curArtDesc2 = " + curArtDesc2, 1)
+                    rss_print.print_debug(__file__, "curArtDesc3 = " + curArtDesc3, 1)
+                if curArtDesc3 != "" and curArtDesc3 == curArtDesc4:
+                    rss_print.print_debug(__file__, "3. ja 4. kirjeldusplokk langevad kokku", 0)
+                    rss_print.print_debug(__file__, "curArtDesc3 = " + curArtDesc3, 1)
+                    rss_print.print_debug(__file__, "curArtDesc4 = " + curArtDesc4, 1)
+                if curArtDesc4 != "" and curArtDesc4 == curArtDesc1:
+                    rss_print.print_debug(__file__, "4. ja 1. kirjeldusplokk langevad kokku", 0)
+                    rss_print.print_debug(__file__, "curArtDesc4 = " + curArtDesc3, 1)
+                    rss_print.print_debug(__file__, "curArtDesc1 = " + curArtDesc4, 1)
 
-            curArtDesc = curArtDesc1 + ' ' + curArtDesc2 + ' ' + curArtDesc3
+            curArtDesc = curArtDesc1 + ' ' + curArtDesc2 + ' ' + curArtDesc3 + ' ' + curArtDesc4
             curArtDesc = curArtDesc.replace('<span class="button--for-subscription"><span>Tellijale</span></span>', "")
-
             articleDataDict["descriptions"].append(curArtDesc)
+
             articleDataDict["images"].append(curArtImg)
 
     return articleDataDict

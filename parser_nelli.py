@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import parsers_datetime
 import parsers_common
 import rss_config
 
@@ -26,7 +27,7 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
             # timeformat magic from "18.08.2019 21:35" to datetime()
             curArtPubDate = parsers_common.xpath_to_single(pageTree, '//div[@class="sg-article-details"]/div[@class="date"]/text()')
-            curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M")
+            curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M")
             articleDataDict["pubDates"].append(curArtPubDate)
 
     return articleDataDict

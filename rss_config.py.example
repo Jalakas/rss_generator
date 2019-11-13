@@ -18,6 +18,15 @@ HEADERS = {
 GET_ARTICLE_BODIES = True
 MAX_ARTICLE_BODIES = 200
 
-WEBDRIVER_PATH = "/home/user/folder/geckodriver"
+PATH_WEBDRIVER = "/home/user/folder/geckodriver"
 
 ARTICLE_CACHE_POLICY = 'auto'  # options = 'all', 'auto', 'off'
+
+FILE_ENCODING = "utf-8"
+
+PATH_PROFILE_FIREFOX = "/home/user/.mozilla/firefox/nc5e7mij.default-1414525149095"
+# PATH_PROFILE_FIREFOX = "C:/Users/<user name>/AppData/Roaming/Mozilla/Firefox/Profiles/abc3defghij2.ProfileName"
+
+TIMEOUT = 15  # sek
+
+PATH_FILENAME_STAT = "/home/user/folder/statistics/stat.csv"

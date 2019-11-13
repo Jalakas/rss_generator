@@ -9,6 +9,11 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
     articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//table[@class="views-table cols-5"]/tbody/tr/td[1]/text()')
     articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//table[@class="views-table cols-5"]/tbody/tr/td[5]/div[1]/a/@href')
 
+    for i in parsers_common.article_urls_range(articleDataDict["urls"]):
+        # description
+        curArtDesc = articleDataDict["descriptions"][i]
+        articleDataDict["descriptions"][i] = curArtDesc
+
     # remove unwanted content
     dictWhitelist = ['Tartu', 'Türi']
     dictCond = "in"

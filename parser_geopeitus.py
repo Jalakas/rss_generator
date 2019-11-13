@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import parsers_datetime
 import parsers_common
 
 
@@ -13,7 +14,7 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # timeformat magic from "29.08.19" to datetime()
         curArtPubDate = articleDataDict["pubDates"][i]
-        curArtPubDate = parsers_common.raw_to_datetime(curArtPubDate, "%d.%m.%y")
+        curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d.%m.%y")
         articleDataDict["pubDates"][i] = curArtPubDate
 
     # remove unwanted content
