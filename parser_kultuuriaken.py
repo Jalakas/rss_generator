@@ -21,6 +21,14 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
         curArtUrl = curArtUrl.split("?event=")[0]
         articleDataDict["urls"][i] = curArtUrl
 
+    # remove unwanted content
+    dictBlacklist = [
+        "Jääb ära"
+    ]
+    dictCond = "in"
+    dictField = "titles"
+    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictField, dictCond, dictBlacklist=dictBlacklist)
+
     # newest events last for feedly ordering
     articleDataDict["images"].reverse()
     articleDataDict["titles"].reverse()

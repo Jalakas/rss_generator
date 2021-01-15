@@ -514,31 +514,10 @@ def lchop(inpString, stripString):
         rss_print.print_debug(__file__, "sisend tühi, katkestame: stripString = '" + str(stripString) + "'", 0)
         return inpString
 
-    # constant
-    stripStringLen = len(stripString)
-
     while (inpString.startswith(stripString)):
-        inpString = inpString[stripStringLen:]
-        rss_print.print_debug(__file__, "eemaldasime algusest stringi: '" + str(stripString) + "'", 4)
+        inpString = inpString.removeprefix(stripString)
 
     return inpString
-
-
-def months_to_int(rawDateTimeText):
-    rawDateTimeText = rawDateTimeText.replace('  ', ' ').strip().lower()
-    # est long
-    rawDateTimeText = rawDateTimeText.replace('jaanuar', '01').replace('veebruar', '02').replace('märts', '03').replace('aprill', '04').replace('mai', '05').replace('juuni', '06')
-    rawDateTimeText = rawDateTimeText.replace('juuli', '07').replace('august', '08').replace('september', '09').replace('oktoober', '10').replace('november', '11').replace('detsember', '12')
-    # est short
-    rawDateTimeText = rawDateTimeText.replace('jaan', '01').replace('veebr', '02').replace('veeb', '02').replace('märts', '03').replace('mär', '03')
-    rawDateTimeText = rawDateTimeText.replace('aprill', '04').replace('mai', '05').replace('juun', '06')
-    rawDateTimeText = rawDateTimeText.replace('juul', '07').replace('aug', '08').replace('sept', '09')
-    rawDateTimeText = rawDateTimeText.replace('okt', '10').replace('nov', '11').replace('dets', '12')
-    # eng short
-    rawDateTimeText = rawDateTimeText.replace('jan', '01').replace('feb', '02').replace('mar', '03').replace('apr', '04').replace('may', '05').replace('jun', '06')
-    rawDateTimeText = rawDateTimeText.replace('jul', '07').replace('aug', '08').replace('sep', '09').replace('oct', '10').replace('nov', '11').replace('dec', '12')
-
-    return rawDateTimeText
 
 
 def remove_weekday_strings(rawDateTimeText):
@@ -562,14 +541,8 @@ def rchop(inpString, stripString):
         rss_print.print_debug(__file__, "sisend tühi, katkestame: stripString = '" + str(stripString) + "'", 0)
         return inpString
 
-    # constant
-    stripStringLen = len(stripString)
-
     while (inpString.endswith(stripString)):
-        inpStringLenWithoutStripString = len(inpString) - stripStringLen
-
-        inpString = inpString[:inpStringLenWithoutStripString]
-        rss_print.print_debug(__file__, "eemaldasime lõpust stringi '" + str(stripString) + "': " + str(inpString), 4)
+        inpString = inpString.removesuffix(stripString)
 
     return inpString
 

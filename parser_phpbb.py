@@ -8,8 +8,8 @@ import rss_print
 
 def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
-    maxArticleBodies = min(rss_config.MAX_ARTICLE_BODIES, 15)
-    maxArticlePostsCount = round(200 / maxArticleBodies)  # set 0 for all posts
+    maxArticleBodies = min(rss_config.MAX_ARTICLE_BODIES, 10)
+    maxArticlePostsCount = round(rss_config.MAX_ARTICLE_BODIES / maxArticleBodies)  # set 0 for all posts
 
     if "militaar.net" in domain:
         articlesTitles = parsers_common.xpath_to_list(pageTree, '//tr[@valign="middle"]/td[3]/a/text()')
@@ -74,7 +74,7 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
                 # datetime
                 curArtPubDate = articlesPostsPubDates[j]
-                curArtPubDate = parsers_common.months_to_int(curArtPubDate)
+                curArtPubDate = parsers_datetime.months_to_int(curArtPubDate)
                 curArtPubDate = parsers_common.remove_weekday_strings(curArtPubDate)
                 curArtPubDate = parsers_datetime.guess_datetime(curArtPubDate)
                 articleDataDict["pubDates"].append(curArtPubDate)

@@ -9,7 +9,7 @@ import rss_print
 def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
     maxArticleBodies = min(rss_config.MAX_ARTICLE_BODIES, 15)
-    maxArticlePostsCount = round(200 / maxArticleBodies)  # set 0 for all posts
+    maxArticlePostsCount = round(rss_config.MAX_ARTICLE_BODIES / maxArticleBodies)  # set 0 for all posts
 
     articlesTitles = parsers_common.xpath_to_list(pageTree, '//li/div/div/div[@class="inner"]/h3/a/text()')
     articlesUrls = parsers_common.xpath_to_list(pageTree, '//li/div/div/div[@class="inner"]/h3/a/@href')

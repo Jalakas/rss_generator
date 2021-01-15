@@ -8,16 +8,16 @@ import rss_print
 
 def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
-    maxArticleBodies = min(rss_config.MAX_ARTICLE_BODIES, 15)
-    maxArticlePostsCount = round(200 / maxArticleBodies)  # set 0 for all posts
+    maxArticleBodies = min(rss_config.MAX_ARTICLE_BODIES, 7)
+    maxArticlePostsCount = round(rss_config.MAX_ARTICLE_BODIES / maxArticleBodies)  # set 0 for all posts
 
     articlesTitles = parsers_common.xpath_to_list(pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="title"]/a/@title')
     articlesUrls = parsers_common.xpath_to_list(pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="title"]/a/@href')
 
     # teemade läbivaatamine
     for i in parsers_common.article_urls_range(articlesUrls):
-        if articlesTitles[i] == "Kalev Jaik võsafilosoofist majandusteadlane":
-            rss_print.print_debug(__file__, "jätame vahele teema: 'Kalev Jaik võsafilosoofist majandusteadlane'", 1)
+        if articlesTitles[i] in ("Kalev Jaik võsafilosoofist majandusteadlane", "Börsihai 2020"):
+            rss_print.print_debug(__file__, "jätame vahele teema: " + articlesTitles[i], 1)
             continue
 
         # teemalehe sisu hankimine

@@ -66,7 +66,7 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText):
             curValue = curValue.replace("  ", " ")
             curValue = curValue.strip()
             curValue = parsers_common.capitalize_first(curValue)
-            itemTitle.text = curValue
+            itemTitle.text = curValue.encode('ascii', 'xmlcharrefreplace')
         else:
             rss_print.print_debug(__file__, "järgneval aadressil puudus vajalik pealkiri: " + str(itemLink.text), 0)
             itemTitle = etree.SubElement(item, "title")
@@ -156,10 +156,7 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText):
             itemAuthorName = etree.SubElement(itemAuthor, "name")
 
             curValue = list(dataset["authors"])[i]
-            itemAuthorName.text = curValue
-
-            # lisame autori descriptioni algusesse
-            itemDescription.text = curValue + ":<br>" + itemDescription.text
+            itemAuthorName.text = curValue.encode('ascii', 'xmlcharrefreplace')
 
     ret = etree.ElementTree(root)
 

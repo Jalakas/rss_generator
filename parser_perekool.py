@@ -8,8 +8,8 @@ import rss_print
 
 def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
-    maxArticleBodies = min(rss_config.MAX_ARTICLE_BODIES, 5)
-    maxArticlePostsCount = round(150 / maxArticleBodies)  # set 0 for all posts
+    maxArticleBodies = min(rss_config.MAX_ARTICLE_BODIES, 1)
+    maxArticlePostsCount = round(rss_config.MAX_ARTICLE_BODIES / maxArticleBodies)  # set 0 for all posts
 
     articlesTitles = parsers_common.xpath_to_list(pageTree, '//tr/th[@class="col-7 teemapealkiri"]/a/text()')
     articlesUrls = parsers_common.xpath_to_list(pageTree, '//tr/th[@class="col-4"]/a/@href')
@@ -34,7 +34,7 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
             for j in parsers_common.article_posts_range(articlesPostsUrls, maxArticlePostsCount):
                 # description
                 curArtDesc = articlesPostsDescriptions[j]
-                curArtDesc = curArtDesc.split('<div class="gdrts-dynamic-block')[0]
+                curArtDesc = curArtDesc.split('<div class="gdrts-rating-block')[0]
                 curArtDesc = parsers_common.fix_drunk_post(curArtDesc)
                 articleDataDict["descriptions"].append(curArtDesc)
 
@@ -54,7 +54,7 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
                 rss_print.print_debug(__file__, "teema postitus nr. " + str(j + 1) + "/(" + str(len(articlesPostsUrls)) + ") on " + articlesPostsUrls[j], 2)
 
     # remove unwanted content
-    dictBlacklist = ["abort", "beebi", "IVF", " rased", "rasest", "räpp", "triibupüüdjad"]
+    dictBlacklist = ["abort", "beebi", "IVF", " rased", "rasest", "räpp", "triibupüüdjad", "Triibupüüdjad"]
     dictCond = "in"
     dictField = "titles"
     articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictField, dictCond, dictBlacklist=dictBlacklist)

@@ -8,14 +8,22 @@ import rss_print
 
 def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
 
-    articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/div/span[2]/text()')
-    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/span/a/text()')
-    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//ul[@class="search-results"]/li[@class="search-results__item"]/div[@class="flex"]/span/a/@href')
+    articleDataDict["pubDates"] = parsers_common.xpath_to_list(pageTree, '//div[@class="article-content"]/div[@class="article-content__meta"]/span[@class="article-content__date-published"]/text()')
+    articleDataDict["pubDatesDay"] = parsers_common.xpath_to_list(pageTree, '//div[@class="article-content"]/div[@class="article-content__meta"]/span[@class="article-content__date-published"]/span/text()')
+    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//div[@class="article-content"]/a[@class="article-content__headline"]/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//div[@class="article-content"]/a[@class="article-content__headline"]/@href')
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # timeformat magic from "24.12.2017 17:51" to datetime()
+
+        curArtPubDateDay = ""
+        if len(articleDataDict["pubDatesDay"]) - 1 >= i:
+            curArtPubDateDay = articleDataDict["pubDatesDay"][i]
+            curArtPubDateDay = parsers_datetime.replace_string_with_timeformat(curArtPubDateDay, "Eile", "%d.%m.%Y", offSetDays=-1)
+            curArtPubDateDay = parsers_datetime.replace_string_with_timeformat(curArtPubDateDay, "Täna", "%d.%m.%Y", offSetDays=0)
+
         curArtPubDate = articleDataDict["pubDates"][i]
-        curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d.%m.%Y, %H:%M")
+        curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDateDay + curArtPubDate, "%d.%m.%Y, %H:%M")
         articleDataDict["pubDates"][i] = curArtPubDate
 
         if (rss_config.GET_ARTICLE_BODIES is True and i < rss_config.MAX_ARTICLE_BODIES):

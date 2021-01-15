@@ -16,7 +16,8 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
         # timeformat magic from "03.01.2018 11:09.08 [Tanel]" to datetime()
         curArtPubDate = articleDataDict["pubDates"][i]
         curArtPubDate = curArtPubDate.split('[')[-2]
-        curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M.%S")
+        curArtPubDate = parsers_datetime.months_to_int(curArtPubDate)
+        curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d. %m %Y %H:%M:%S")
         articleDataDict["pubDates"][i] = curArtPubDate
 
     return articleDataDict

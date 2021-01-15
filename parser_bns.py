@@ -17,7 +17,7 @@ def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # timeformat magic from "14 dets  2017 11:34" to datetime()
         curArtPubDate = articleDataDict["pubDates"][i]
-        curArtPubDate = parsers_common.months_to_int(curArtPubDate)
+        curArtPubDate = parsers_datetime.months_to_int(curArtPubDate)
         curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d %m %Y %H:%M")
         articleDataDict["pubDates"][i] = curArtPubDate
 
