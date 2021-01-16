@@ -4,9 +4,9 @@
     RSS voogude genereerimise käivitaja
 """
 
+import sys
 import os
 import requests
-import sys
 
 import parsers_common
 import rss_argv
@@ -34,6 +34,7 @@ import parser_phpbb  # noqa F401
 import parser_postimees  # noqa F401
 import parser_ra  # noqa F401
 import parser_raadioteater  # noqa F401
+import parser_soundcloud  # noqa F401
 import parser_stokker  # noqa F401
 import parser_tartuekspress  # noqa F401
 import parser_tootukassa  # noqa F401

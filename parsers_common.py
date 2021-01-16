@@ -412,7 +412,11 @@ def html_post_cleanup(htmlPostString):
     # remove attributes
     htmlPostString = re.sub(r' alt=(\")[\s\S]*?(\")', "", htmlPostString)
     htmlPostString = re.sub(r' class=(\")[\s\S]*?(\")', "", htmlPostString)
+    htmlPostString = re.sub(r' content=(\")[\s\S]*?(\")', "", htmlPostString)
     htmlPostString = re.sub(r' id=(\")[\s\S]*?(\")', "", htmlPostString)
+    htmlPostString = re.sub(r' itemprop=(\")[\s\S]*?(\")', "", htmlPostString)
+    htmlPostString = re.sub(r' itemscope', "", htmlPostString)
+    htmlPostString = re.sub(r' itemtype=(\")[\s\S]*?(\")', "", htmlPostString)
     htmlPostString = re.sub(r' rel=(\")[\s\S]*?(\")', "", htmlPostString)
     htmlPostString = re.sub(r' style=(\")[\s\S]*?(\")', "", htmlPostString)
     htmlPostString = re.sub(r' target=(\")[\s\S]*?(\")', "", htmlPostString)
@@ -420,6 +424,7 @@ def html_post_cleanup(htmlPostString):
 
     # remove elements
     htmlPostString = htmlPostString.replace("<hr>", "")
+    htmlPostString = htmlPostString.replace("<meta>", "")
     htmlPostString = re.sub(r'<span[\s\S]*?>', "", htmlPostString)
     htmlPostString = htmlPostString.replace("</span>", "")
 
