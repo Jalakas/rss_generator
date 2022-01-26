@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-
 """
-    RSS voogude genereerimise käivitaja
+    RSS voogude genereerimise käivitaja.
 """
 
-import sys
 import os
+import sys
+
 import requests
 
 import parsers_common
@@ -13,35 +13,8 @@ import rss_argv
 import rss_config
 import rss_disk
 import rss_maker
-import rss_makereq
 import rss_print
-
-import parser_auto24  # noqa F401
-import parser_avalikteenistus  # noqa F401
-import parser_bns  # noqa F401
-import parser_err  # noqa F401
-import parser_geopeitus  # noqa F401
-import parser_hv  # noqa F401
-import parser_kultuuriaken  # noqa F401
-import parser_lhv  # noqa F401
-import parser_lineageos  # noqa F401
-import parser_mixcloud  # noqa F401
-import parser_nelli  # noqa F401
-import parser_nommeraadio  # noqa F401
-import parser_osta  # noqa F401
-import parser_perekool  # noqa F401
-import parser_phpbb  # noqa F401
-import parser_postimees  # noqa F401
-import parser_ra  # noqa F401
-import parser_raadioteater  # noqa F401
-import parser_soundcloud  # noqa F401
-import parser_stokker  # noqa F401
-import parser_tartuekspress  # noqa F401
-import parser_tootukassa  # noqa F401
-import parser_trm  # noqa F401
-import parser_tv3  # noqa F401
-import parser_vbulletin  # noqa F401
-import parser_youtube  # noqa F401
+import rss_requests
 
 # manage command line user inputs
 RSS_TO_GENERATE = []
@@ -52,68 +25,76 @@ if not RSS_TO_GENERATE:
         rss_print.print_debug(__file__, "ei suutnud sisendist tuvastada sobivat nime, genereeritakse kõik vood.", 0)
 
 # make new session
-SESSION = requests.session()
+rss_requests.SESSION = requests.session()
 
 # generate all feeds
 for curRSS in RSS_TO_GENERATE:
-    curParser = sys.modules['parser_' + rss_config.RSS_DEFS[curRSS][0]]
+    __import__("parser_" + rss_config.RSS_DEFS[curRSS][0])
+    curParser = sys.modules["parser_" + rss_config.RSS_DEFS[curRSS][0]]
     curName = rss_config.RSS_DEFS[curRSS][1]
+    rss_print.print_debug(__file__, "alustame töötlust sisendil[" + str(curRSS) + "]: " + curName, 1)
     curTitle = rss_config.RSS_DEFS[curRSS][2]
     curDescription = rss_config.RSS_DEFS[curRSS][2] + " - " + rss_config.RSS_DEFS[curRSS][3]
     curDomainShort = rss_config.RSS_DEFS[curRSS][4]
-    curDomainShort = parsers_common.rchop(curDomainShort, "/")
-    curDomainShort = curDomainShort.replace('//', '/').replace('https:/', 'https://').replace('http:/', 'http://')
+    curDomainShort = parsers_common.str_rchop(curDomainShort, "/")
+    curDomainShort = parsers_common.str_fix_url_begginning(curDomainShort)
     if len(rss_config.RSS_DEFS[curRSS]) > 4 and rss_config.RSS_DEFS[curRSS][5]:
-        curDomainLong = rss_config.RSS_DEFS[curRSS][5]
+        curDomainsLong = rss_config.RSS_DEFS[curRSS][5]
     else:
-        curDomainLong = curDomainShort
+        curDomainsLong = [curDomainShort]
 
     # preparations
-    curFilename = curName + '.rss'
-    articleDataDictEmpty = {"authors": [], "descriptions": [], "images": [], "pubDates": [], "titles": [], "urls": []}
+    curFilename = curName + ".rss"
+    articleDataDict = {"authors": [], "descriptions": [], "images": [], "pubDates": [], "titles": [], "urls": []}
 
-    # get article tree from internet
-    rss_print.print_debug(__file__, "asume lehte hankimima: " + curDomainLong, 2)
-    articleHtmlTree = parsers_common.get_article_tree(SESSION, curDomainShort, curDomainLong, noCache=True)
+    for curDomainLong in curDomainsLong:
+        if not curDomainLong.startswith("http"):
+            rss_print.print_debug(__file__, "lühivorm curDomainLong: " + curDomainLong, 2)
+            curDomainLong = curDomainShort + curDomainLong
+            curDomainLong = parsers_common.str_fix_url_begginning(curDomainLong)
 
-    # get all content from page
-    rss_print.print_debug(__file__, "asume lehelt sisu hankimima: " + curDomainLong, 2)
-    articleDataDict = curParser.fill_article_dict(articleDataDictEmpty, articleHtmlTree, curDomainShort, curDomainLong, SESSION)
+        # get article tree from internet
+        rss_print.print_debug(__file__, "asume hankimima lehte: " + curDomainLong, 2)
+        pageTree = parsers_common.get_article_tree(curDomainShort, curDomainLong, cache='cacheOff')
 
-    lastValueCount = 0
-    lastValueName = ""
-    for x in articleDataDict:
-        curValueCount = len(articleDataDict[x])
-        curValueName = str(x)
+        # get all content from page
+        rss_print.print_debug(__file__, "asume sisu hankimima lehelt: " + curDomainLong, 2)
+        curArticleDataDict = curParser.fill_article_dict({"authors": [], "descriptions": [], "images": [], "pubDates": [], "titles": [], "urls": []}, pageTree, curDomainShort)
 
-        if (lastValueCount != 0 and curValueCount != 0 and lastValueCount != curValueCount):
-            rss_print.print_debug(__file__, "'" + curValueName + "' väärtuste arv: " + str(curValueCount) + " ei kattu eelmisega '" + lastValueName + "':" + str(lastValueCount), 0)
-        elif curValueName == "urls" and curValueCount == 0:
-            rss_print.print_debug(__file__, "'" + curValueName + "' väärtuste arv: " + str(curValueCount), 0)
-        elif curValueName == "urls":
-            rss_print.print_debug(__file__, "'" + curValueName + "' väärtuste arv: " + str(curValueCount), 1)
-        else:
-            rss_print.print_debug(__file__, "'" + curValueName + "' väärtuste arv: " + str(curValueCount), 2)
+        # test counts
+        parsers_common.dict_stats(curArticleDataDict)
 
-        rss_print.print_debug(__file__, "'" + curValueName + "' = " + str(articleDataDict[x]), 3)
+        # lisame viimased andmed
+        rss_print.print_debug(__file__, "lisame andmed viimaselt alamlehelt: " + curDomainLong, 2)
+        articleDataDict = parsers_common.dict_add_dict(articleDataDict, curArticleDataDict)
 
-        lastValueCount = curValueCount
-        lastValueName = curValueName
+    if not articleDataDict["urls"]:
+        rss_print.print_debug(__file__, "ei leitud andmeid lehelt: " + curDomainShort, 0)
+        continue
+
+    # remove unwanted content: titles
+    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, rss_config.BAD_TITLES, "in", "titles")
+
+    # remove unwanted content: descriptions
+    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, rss_config.BAD_DESCRIPTIONS, "in", "descriptions")
 
     # combine rss file
-    rss_content = rss_maker.rssmaker(articleDataDict, curTitle, curDomainShort, curDomainLong, curDescription)
+    rss_print.print_debug(__file__, "asume koostame rss-i: " + curDomainLong, 3)
+    rssContent = rss_maker.rssmaker(articleDataDict, curTitle, curDomainShort, curDomainLong, curDescription)
 
     # make sure we have subfolder
     OS_PATH = os.path.dirname(os.path.abspath(__file__))
-    LATEST_FEEDS_PATH = OS_PATH + '/' + 'latest_feeds'
+    LATEST_FEEDS_PATH = OS_PATH + "/" + "latest_feeds"
     if not os.path.exists(LATEST_FEEDS_PATH):
         os.makedirs(LATEST_FEEDS_PATH)
 
-    # move away old feed, if there is any
-    rss_disk.rename_file(LATEST_FEEDS_PATH, curFilename)
-
     # write feed file
-    rss_disk.write_file(LATEST_FEEDS_PATH, curFilename, rss_content)
+    rss_disk.write_file(LATEST_FEEDS_PATH, curFilename, rssContent)
 
     # upload feed
-    rss_makereq.upload_file(LATEST_FEEDS_PATH, curFilename)
+    rss_requests.upload_file(LATEST_FEEDS_PATH, curFilename)
+
+# close selenium profile
+if rss_config.SELENIUM_DRIVER_DEFAULT != "":
+    rss_print.print_debug(__file__, "sulgeme selenium akna(d)", 2)
+    rss_config.SELENIUM_DRIVER_DEFAULT.quit()

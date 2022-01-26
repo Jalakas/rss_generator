@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 import fileinput
 import sys
@@ -13,23 +12,26 @@ def save_path(count, xpathString, found):
         countFound = 0
         countNotfound = 0
 
-        file = open(rss_config.PATH_FILENAME_STAT, "r")
-        for line in file:
-            if line.startswith(xpathString):
-                splittedLine = line.split(";")
-                countFound = (int)(splittedLine[1])
-                countNotfound = (int)(splittedLine[2])
+        try:
+            with open(rss_config.PATH_FILENAME_STAT, "r") as file:
+                for line in file:
+                    if line.startswith(xpathString):
+                        splittedLine = line.split(";")
+                        countFound = (int)(splittedLine[1])
+                        countNotfound = (int)(splittedLine[2])
+        except Exception:
+            with open(rss_config.PATH_FILENAME_STAT, 'a') as file:
+                file.write("")
 
-        if found is True:
+        if found:
             countFound += 1
-        elif found is False:
+        elif not found:
             countNotfound += 1
 
         xpathStringWithStats = xpathString + ";" + str(countFound) + ";" + str(countNotfound) + ";"
 
         replace_line_in_file(rss_config.PATH_FILENAME_STAT, xpathString + ";", xpathStringWithStats)
 
-        # print
         rss_print.print_debug(__file__, xpathStringWithStats, 4)
 
 
@@ -43,7 +45,7 @@ def replace_line_in_file(inpfile, searchExp, replaceExp):
             line = replaceExp + "\n"
         sys.stdout.write(line)
 
-    if found is False:
+    if not found:
         rss_print.print_debug(__file__, "lisame lõppu: " + replaceExp, 1)
         with open(inpfile, 'a') as file:
             file.write(replaceExp + "\n")

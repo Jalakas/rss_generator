@@ -8,6 +8,7 @@ $ ./rss_generator.py tartuekspress
 $ ./rss_generator.py
 
 # Valikud
-$ -limit=N 		piirab uudisteallika lugude allalaadimiste arvu N artikli peale
-$ -cache		ei tee internetipäringuid
-$ -nocache		teeb alati internetipäringu
+$ -limit=N 	piirab uudisteallika lugude allalaadimiste arvu N artikli peale
+$ -cache	ei tee internetipäringuid
+$ -nocache	teeb alati internetipäringu
+$ -v		andmete hankimise ja voo loomise lisainfo

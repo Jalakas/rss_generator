@@ -1,60 +1,68 @@
-#!/usr/bin/env python3
 
-import parsers_datetime
 import parsers_common
+import parsers_datetime
 import rss_config
 import rss_print
 
 
-def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
+def fill_article_dict(articleDataDict, pageTree, domain):
 
-    maxArticleBodies = min(rss_config.MAX_ARTICLE_BODIES, 7)
-    maxArticlePostsCount = round(rss_config.MAX_ARTICLE_BODIES / maxArticleBodies)  # set 0 for all posts
+    maxArticleBodies = min(rss_config.REQUEST_ARTICLE_BODIES_MAX, 5)
+    maxArticlePosts = round(rss_config.REQUEST_ARTICLE_POSTS_MAX / maxArticleBodies)  # set 0 for all posts
 
-    articlesTitles = parsers_common.xpath_to_list(pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="title"]/a/@title')
-    articlesUrls = parsers_common.xpath_to_list(pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="title"]/a/@href')
+    parentPages = {}
+    parentPages["stamps"] = parsers_common.xpath_to("list", pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="meta"][4]/span/text()')
+    parentPages["titles"] = parsers_common.xpath_to("list", pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="title"]/a/@title')
+    parentPages["urls"] =   parsers_common.xpath_to("list", pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="title"]/a/@href')
+
+    # remove unwanted content: titles
+    dictList = [
+        "Börsihai",
+        "Cleveroni aktsiate ost/müük/oksjon",
+        "Head uut aastat – prognoosid",
+        "Keegi malet soovib mängida",
+        "LHV Pank paremaks",
+        "Uurimis- ja lõputööde küsimustikud",
+    ]
+    parentPages = parsers_common.article_data_dict_clean(parentPages, dictList, "in", "titles")
 
     # teemade läbivaatamine
-    for i in parsers_common.article_urls_range(articlesUrls):
-        if articlesTitles[i] in ("Kalev Jaik võsafilosoofist majandusteadlane", "Börsihai 2020"):
-            rss_print.print_debug(__file__, "jätame vahele teema: " + articlesTitles[i], 1)
-            continue
-
+    for i in parsers_common.article_urls_range(parentPages["urls"]):
         # teemalehe sisu hankimine
-        if (rss_config.GET_ARTICLE_BODIES is True and i < maxArticleBodies):
-            pageTree = parsers_common.get_article_tree(session, domain, articlesUrls[i] + '?listEventId=jumpToPage&listEventParam=100&pagesOfMaxSize=true', noCache=True)
+        if parsers_common.should_get_article_body(i, maxArticleBodies):
+            # load article into tree
+            pageTree = parsers_common.get_article_tree(domain, parentPages["urls"][i] + '?listEventId=jumpToPage&listEventParam=100&pagesOfMaxSize=true', cache='cacheStamped', pageStamp=parentPages["stamps"][i])
 
-            articlesPostsAuthors = parsers_common.xpath_to_list(pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/p[@class="author"]/strong/a/text()')
-            articlesPostsIds = parsers_common.xpath_to_list(pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/div/p[@class="permalink"]/a/@href')
-            articlesPostsPubDates = parsers_common.xpath_to_list(pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/div/p[@class="permalink"]/a/node()')
-            articlesPostsDescriptions = parsers_common.xpath_to_list(pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-content temporary-class"]', parent=True)
+            articlePostsDict = {}
+            articlePostsDict["authors"] =       parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/p[@class="author"]/strong/a/text()')
+            articlePostsDict["descriptions"] =  parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-content temporary-class"]', parent=True)
+            articlePostsDict["pubDates"] =      parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/div/p[@class="permalink"]/a/node()')
+            articlePostsDict["urls"] =          parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/div/p[@class="permalink"]/a/@href')
 
-            # postituste läbivaatamine
-            for j in parsers_common.article_posts_range(articlesPostsIds, maxArticlePostsCount):
+            # teema postituste läbivaatamine
+            for j in parsers_common.article_posts_range(articlePostsDict["urls"], maxArticlePosts):
                 # author
-                curArtAuthor = articlesPostsAuthors[j]
-                articleDataDict["authors"].append(curArtAuthor)
+                articleDataDict["authors"] = parsers_common.list_add(articleDataDict["authors"], j, parsers_common.get(articlePostsDict["authors"], j))
 
                 # description
-                curArtDesc = articlesPostsDescriptions[j]
-                curArtDesc = parsers_common.fix_drunk_post(curArtDesc)
-                articleDataDict["descriptions"].append(curArtDesc)
+                articleDataDict["descriptions"] = parsers_common.list_add(articleDataDict["descriptions"], j, parsers_common.get(articlePostsDict["descriptions"], j))
 
-                # timeformat magic from "15.01.2012 23:49" to datetime()
-                curArtPubDate = articlesPostsPubDates[j]
-                curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, "Eile", "%d.%m.%Y", offSetDays=-1)
+                # pubDates magic from "15.01.2012 23:49" to datetime()
+                curArtPubDate = parsers_common.get(articlePostsDict["pubDates"], j)
+                curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, "Eile", "%d.%m.%Y", offsetDays=-1)
                 curArtPubDate = parsers_datetime.add_missing_date_to_string(curArtPubDate, "%d.%m.%Y %H:%M", "%d.%m.%Y ")
                 curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M")
-                articleDataDict["pubDates"].append(curArtPubDate)
+                articleDataDict["pubDates"] = parsers_common.list_add(articleDataDict["pubDates"], j, curArtPubDate)
 
                 # title
-                curArtTitle = parsers_common.title_at_domain(articlesTitles[i], domain)
-                articleDataDict["titles"].append(curArtTitle)
+                curArtTitle = parsers_common.get(parentPages["titles"], i)
+                curArtTitle = parsers_common.str_title_at_domain(curArtTitle, domain)
+                articleDataDict["titles"] = parsers_common.list_add(articleDataDict["titles"], j, curArtTitle)
 
                 # url
-                curArtUrl = articlesUrls[i] + articlesPostsIds[j]
-                articleDataDict["urls"].append(curArtUrl)
+                curArtUrl = parentPages["urls"][i] + articlePostsDict["urls"][j]
+                articleDataDict["urls"] = parsers_common.list_add(articleDataDict["urls"], j, curArtUrl)
 
-                rss_print.print_debug(__file__, "teema postitus nr. " + str(j + 1) + "/(" + str(len(articlesPostsIds)) + ") on " + articlesPostsIds[j], 2)
+                rss_print.print_debug(__file__, "teema postitus nr. " + str(j + 1) + "/(" + str(len(articlePostsDict["urls"])) + ") on " + articlePostsDict["urls"][j], 2)
 
     return articleDataDict

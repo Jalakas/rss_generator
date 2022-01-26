@@ -1,24 +1,79 @@
-#!/usr/bin/env python3
 
 import parsers_common
 
 
-def fill_article_dict(articleDataDict, pageTree, domain, articleUrl, session):
+def fill_article_dict(articleDataDict, pageTree, domain):
 
-    articleDataDict["descriptions"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/h1/a/span/@title')
-#   articleDataDict["images"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/a[@class="album-art"]/div[@class="album-artwork"]/img/@scr')
-    articleDataDict["titles"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/h1/a/span/@title')
-    articleDataDict["urls"] = parsers_common.xpath_to_list(pageTree, '//main/div[1]/div/div/section[@class="card cf"]/hgroup[@class="card-title"]/h1/a/@href')
+    articleDataDict["descriptions"] = parsers_common.xpath_to("list", pageTree, '//main/div[@class="content"]/div/div/div[1]/div/div', parent=True)
+    articleDataDict["images"] = parsers_common.xpath_to("list", pageTree, '//main/div[1]/div/div/div[1]/div/div/a/div/img/@src')
+    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//main/div[@class="content"]/div/div/div[1]/div/div/div/div[1]/div[2]/a/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//main/div[@class="content"]/div/div/div[1]/div/div/div/div[1]/div[2]/a/@href')
 
-    # remove unwanted content
-    dictBlacklist = [
-        "(uus) raamat", "Abramova", "Based Broccoli", "Beats of No Nation", "Bisweed", "EKKM", "ERROR!", "Floorshow", "Gnoom", "Hard Feeler", "Hillbilly Picnic", "IDA Jutud", "IDA Räpp", "Intro",
-        "Katus", "Keskkonnatund", "Kink Konk", "Korrosioon", "Kräpp", "Let Me Juke", "Liin ", "LIIN", "Lunchbreak Lunchdate", "Meie igapäevane avalik ruum", "Muster", "Müürilehe Hommik", "N-LIB"
-        "Paneel", "Playa Music", "Propel", "Puhkus", "Oleneb päevast!", "Rets Records", "Room_202", "Rõhk", "SAAL Raadio", "SAAL RAADIO", "Soojad Suhted", "Soojad suhted", "Svet Nureka", "Söökladisko",
-        "Triinemets.", "Vitamiin K", "Zubrovka AM", "Ära Kaaguta!", "Ära kaaguta!"
-        ]
-    dictCond = "in"
-    dictField = "titles"
-    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictField, dictCond, dictBlacklist=dictBlacklist)
+    # remove unwanted content: titles
+    dictList = [
+        "(uus) raamat",
+        "abramova",
+        "akvavit",
+        "based broccoli",
+        "beats of no nation",
+        "bisweed",
+        "ekkm",
+        "error!",
+        "floorshow",
+        "gnoom",
+        "hard feeler",
+        "hillbilly picnic",
+        "ida jutud",
+        "ida räpp",
+        "intro",
+        "katus",
+        "keskkonnatund",
+        "kink konk",
+        "korrosioon",
+        "kräpp",
+        "let me juke",
+        "liin ",
+        "liin",
+        "lunchbreak lunchdate",
+        "meie igapäevane avalik ruum",
+        "milk",
+        "muster",
+        "myös",
+        "müürilehe hommik",
+        "n-lib"
+        "oleneb päevast!",
+        "oujee!",
+        "paneel",
+        "playa music",
+        "propel",
+        "puhkus",
+        "rets records",
+        "room_202",
+        "rõhk",
+        "saal raadio",
+        "soojad suhted",
+        "svet nureka",
+        "söökladisko",
+        "triinemets.",
+        "vitamiin k",
+        "zubrovka am",
+        "ära kaaguta!",
+        "öömaja",
+    ]
+    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictList, "in", "titles")
+
+    # remove unwanted content: descriptions
+    dictList = [
+        "#hip hop",
+        "#interview",
+        "#rap",
+    ]
+    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictList, "in", "descriptions")
+
+    for i in parsers_common.article_urls_range(articleDataDict["urls"]):
+        # title
+        curArtTitle = parsers_common.get(articleDataDict["titles"], i)
+        curArtTitle = parsers_common.str_title_at_domain(curArtTitle, domain)
+        articleDataDict["titles"] = parsers_common.list_add_or_assign(articleDataDict["titles"], i, curArtTitle)
 
     return articleDataDict

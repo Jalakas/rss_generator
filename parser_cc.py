@@ -5,14 +5,15 @@ import parsers_datetime
 
 def fill_article_dict(articleDataDict, pageTree, domain):
 
-    articleDataDict["pubDates"] =   parsers_common.xpath_to("list", pageTree, '//li[@class="b-posts__list-item"]/p[@class="b-posts__list-item-summary"]/text()')
-    articleDataDict["titles"] =     parsers_common.xpath_to("list", pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/text()')
-    articleDataDict["urls"] =       parsers_common.xpath_to("list", pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/@href')
+    articleDataDict["images"] =   parsers_common.xpath_to("list", pageTree, '//article/a/div/div/img/@src')
+    articleDataDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//article/a/div[@class="node__body"]/p[@class="node__date"]/span/@content')
+    articleDataDict["titles"] =   parsers_common.xpath_to("list", pageTree, '//article/a/div[@class="node__body"]/h3/span/text()')
+    articleDataDict["urls"] =     parsers_common.xpath_to("list", pageTree, '//article/a/@href')
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
-        # pubDates magic from "30.01.2021" to datetime()
+        # pubDates magic from "2021-03-23T12:35:36+00:00" to datetime()
         curArtPubDate = parsers_common.get(articleDataDict["pubDates"], i)
-        curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d.%m.%Y")
+        curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%Y-%m-%dt%H:%M:%S%z")
         articleDataDict["pubDates"] = parsers_common.list_add_or_assign(articleDataDict["pubDates"], i, curArtPubDate)
 
         if parsers_common.should_get_article_body(i):
@@ -22,7 +23,7 @@ def fill_article_dict(articleDataDict, pageTree, domain):
             pageTree = parsers_common.get_article_tree(domain, curArtUrl, cache='cacheAll')
 
             # description
-            curArtDesc = parsers_common.xpath_to("single", pageTree, '//div[@class="b-article"]', parent=True)
+            curArtDesc = parsers_common.xpath_to("single", pageTree, '//div[@class="node__content"]/div/div[@class="field__item"]', parent=True)
             articleDataDict["descriptions"] = parsers_common.list_add_or_assign(articleDataDict["descriptions"], i, curArtDesc)
 
     return articleDataDict
