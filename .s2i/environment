@@ -1,0 +1,2 @@
+APP_FILE=rss_generator.py
+UPGRADE_PIP_TO_LATEST=1
