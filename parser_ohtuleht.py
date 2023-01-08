@@ -5,8 +5,14 @@ import parsers_datetime
 
 def fill_article_dict(articleDataDict, pageTree, domain):
 
-    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//div[@class="grid-main--item "]/div/div[2]/div[1]/h6/a[1]/text()')
-    articleDataDict["urls"] =   parsers_common.xpath_to("list", pageTree, '//div[@class="grid-main--item "]/div/div[2]/div[1]/h6/a[1]/@href')
+    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//a[@class="styled-link__type-1"]/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//a[@class="styled-link__type-1"]/@href')
+
+    # remove unwanted content: titles
+    dictFilters = (
+        "Ristiku Ristsõnad:",
+    )
+    articleDataDict = parsers_common.article_data_dict_clean(__file__, articleDataDict, dictFilters, "in", "titles")
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # titles
@@ -25,29 +31,18 @@ def fill_article_dict(articleDataDict, pageTree, domain):
             articleDataDict["authors"] = parsers_common.list_add_or_assign(articleDataDict["authors"], i, curArtAuthor)
 
             # description
-            curArtDesc1 = parsers_common.xpath_to("single", pageTree, '//div[@class="page-layout--block"][1]/div[@class="page-layout--content"]/div[@class="page-layout--inner"]/div[@class="article-main--content article-main--excerpt formatted--content"]', parent=True)
-            if not curArtDesc1:
-                curArtDesc1 = parsers_common.xpath_to("single", pageTree, '//div[@class="page-layout--content"]/div[@class="page-layout--inner"]/div[@class="article-main--content article-main--excerpt formatted--content"]', parent=True)
+            curArtDesc1 = parsers_common.xpath_to("single", pageTree, '//div[@class="article-main--content article-main--excerpt formatted--content"]', parent=True)
+            curArtDesc2 = parsers_common.xpath_to("single", pageTree, '//div[@class="article-main--content formatted--content"]', parent=True, multi=True)
 
-            curArtDesc2 = parsers_common.xpath_to("single", pageTree, '//div[@class="page-layout--block"][2]/div[@class="page-layout--content"]/div[@class="page-layout--inner"]', parent=True, multi=True)
-
-            curArtDesc = curArtDesc1 + curArtDesc2
-            curArtDesc = curArtDesc.split("Edasi lugemiseks")[0]
-            curArtDesc = curArtDesc.split("Jaga:")[0]
-            curArtDesc = curArtDesc.split("Samal teemal")[0]
+            curArtDesc = curArtDesc1 + '<br>' + curArtDesc2
             articleDataDict["descriptions"] = parsers_common.list_add_or_assign(articleDataDict["descriptions"], i, curArtDesc)
 
             # image
-            curArtImg = parsers_common.xpath_to("single", pageTree, '//div[@class="page-layout--block"][1]//div[@class="image-gallery-image first-in-gallery"][1]/picture[1]/img[@class="article-image"]/@src')
-            if not curArtImg:
-                curArtImg = parsers_common.xpath_to("single", pageTree, '//div[@class="part"][1]/div/p/img/@src')
+            curArtImg = parsers_common.xpath_to("single", pageTree, '//meta[@property="og:image"]/@content')
             articleDataDict["images"] = parsers_common.list_add_or_assign(articleDataDict["images"], i, curArtImg)
 
-            # pubDates from "täna 16:53" to datetime()
-            curArtPubDate = parsers_common.xpath_to("single", pageTree, '//div[@class="details--inner"]/text()')
-            curArtPubDate = curArtPubDate.split(",")[-1]
-            curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, "eile", "%d. %m %Y ", offsetDays=-1)
-            curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, "täna", "%d. %m %Y ", offsetDays=0)
+            # pubDates from "29. juuni 2022 18:36" to datetime()
+            curArtPubDate = parsers_common.xpath_to("single", pageTree, '//div[@class="article-main--details--inner flex align-items-center"]/@data-date')
             curArtPubDate = parsers_datetime.months_to_int(curArtPubDate)
             curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%d. %m %Y %H:%M")
             articleDataDict["pubDates"] = parsers_common.list_add_or_assign(articleDataDict["pubDates"], i, curArtPubDate)

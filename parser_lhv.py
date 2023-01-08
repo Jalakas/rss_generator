@@ -13,36 +13,42 @@ def fill_article_dict(articleDataDict, pageTree, domain):
     parentPages = {}
     parentPages["stamps"] = parsers_common.xpath_to("list", pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="meta"][4]/span/text()')
     parentPages["titles"] = parsers_common.xpath_to("list", pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="title"]/a/@title')
-    parentPages["urls"] =   parsers_common.xpath_to("list", pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="title"]/a/@href')
+    parentPages["urls"] = parsers_common.xpath_to("list", pageTree, '//table[@class="grid zebra forum"]/tr/td[@class="title"]/a/@href')
 
     # remove unwanted content: titles
-    dictList = [
+    dictFilters = (
         "Börsihai",
         "Cleveroni aktsiate ost/müük/oksjon",
         "Head uut aastat – prognoosid",
         "Keegi malet soovib mängida",
         "LHV Pank paremaks",
+        "Muudatused analüütikute hinnangutes",
+        "Sport!",
         "Uurimis- ja lõputööde küsimustikud",
-    ]
-    parentPages = parsers_common.article_data_dict_clean(parentPages, dictList, "in", "titles")
+    )
+    parentPages = parsers_common.article_data_dict_clean(__file__, parentPages, dictFilters, "in", "titles")
 
     # teemade läbivaatamine
     for i in parsers_common.article_urls_range(parentPages["urls"]):
         # teemalehe sisu hankimine
         if parsers_common.should_get_article_body(i, maxArticleBodies):
+            curParentUrl = parsers_common.get(parentPages["urls"], i) + '?listEventId=jumpToPage&listEventParam=100&pagesOfMaxSize=true'
+            parentPagesStamp = parsers_common.get(parentPages["stamps"], i)
+
             # load article into tree
-            pageTree = parsers_common.get_article_tree(domain, parentPages["urls"][i] + '?listEventId=jumpToPage&listEventParam=100&pagesOfMaxSize=true', cache='cacheStamped', pageStamp=parentPages["stamps"][i])
+            pageTree = parsers_common.get_article_tree(domain, curParentUrl, cache='cacheStamped', pageStamp=parentPagesStamp)
 
             articlePostsDict = {}
-            articlePostsDict["authors"] =       parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/p[@class="author"]/strong/a/text()')
-            articlePostsDict["descriptions"] =  parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-content temporary-class"]', parent=True)
-            articlePostsDict["pubDates"] =      parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/div/p[@class="permalink"]/a/node()')
-            articlePostsDict["urls"] =          parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/div/p[@class="permalink"]/a/@href')
+            articlePostsDict["authors"] = parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/p[@class="author"]/strong/a/text()')
+            articlePostsDict["descriptions"] = parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-content temporary-class"]', parent=True)
+            articlePostsDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/div/p[@class="permalink"]/a/node()')
+            articlePostsDict["urls"] = parsers_common.xpath_to("list", pageTree, '//ul[@class="forum-topic"]/li/div[@class="col2"]/div[@class="forum-header clear"]/div/p[@class="permalink"]/a/@href')
 
             # teema postituste läbivaatamine
             for j in parsers_common.article_posts_range(articlePostsDict["urls"], maxArticlePosts):
                 # author
-                articleDataDict["authors"] = parsers_common.list_add(articleDataDict["authors"], j, parsers_common.get(articlePostsDict["authors"], j))
+                curArtAuthor = parsers_common.get(articlePostsDict["authors"], j)
+                articleDataDict["authors"] = parsers_common.list_add(articleDataDict["authors"], j, curArtAuthor)
 
                 # description
                 articleDataDict["descriptions"] = parsers_common.list_add(articleDataDict["descriptions"], j, parsers_common.get(articlePostsDict["descriptions"], j))

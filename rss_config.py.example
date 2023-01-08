@@ -5,31 +5,40 @@
 
 import random
 
-# PATH_PROFILE_FIREFOX = "C:/Users/<user name>/AppData/Roaming/Mozilla/Firefox/Profiles/abc3defghij2.ProfileName"
-ARTICLE_CACHE_POLICY = 'auto'  # options = 'all', 'auto', 'off'
-DO_NOT_ADD_TOO_OLD = True  # Feedly does not support articles older than 30 days
-FILE_ENCODING = "utf-8"
-GET_ARTICLE_BODIES = True
-HOST_URL = 'http://your.url/'
+CACHE_FILE_ENCODING = "utf-8"
+CACHE_POLICY_ARTICLE = 'auto'  # options = 'all', 'auto', 'off'
 LOCAL_USERNAME = "username"
-MAX_ARTICLE_BODIES = 200
-MAX_ARTICLE_POSTS = 500
-PATH_FILENAME_DEBUG = "/home/" + LOCAL_USERNAME + "/folder/debug.xml"
-PATH_FILENAME_STAT = "/home/" + LOCAL_USERNAME + "/folder/statistics/stat.csv"
-PATH_PROFILE_FIREFOX = "/home/" + LOCAL_USERNAME + "/.mozilla/firefox/nc5e7mij.default-1414525149095"
-PATH_WEBDRIVER = "/home/" + LOCAL_USERNAME + "/folder/geckodriver"
+PATH_FILENAME_DEBUG = "/home/" + LOCAL_USERNAME + "/rss_generator/debug.xml"
+PATH_FILENAME_FILTER = "/home/" + LOCAL_USERNAME + "/rss_generator/statistics/filter.csv"
+PATH_FILENAME_STAT = "/home/" + LOCAL_USERNAME + "/rss_generator/statistics/xpath.csv"
+PATH_FIREFOX_PROFILE = "/home/" + LOCAL_USERNAME + "/.mozilla/firefox/" + "xyz.default-esr"
+PATH_WEBDRIVER = "/home/" + LOCAL_USERNAME + "/rss_generator/geckodriver"
 PRINT_MESSAGE_LEVEL = 0
-SELENIUM_DRIVER_DEFAULT = ""
+REQUEST_ARTICLE_BODIES = True
+REQUEST_ARTICLE_BODIES_MAX = 200
+REQUEST_ARTICLE_POSTS_MAX = 500
+REQUEST_TIMEOUT = 10  # sek
+SELENIUM_DRIVER = ""
 SELENIUM_DRIVER_PROFILE = ""
-TIMEOUT = 15  # sek
+UPLOAD_DOMAIN = 'http://domain.ee'
 UPLOAD_NAME = 'rss_file'
-UPLOAD_URL = HOST_URL + 'rss_generator.php'
+UPLOAD_TIME_LIMIT = True  # Feedly does not support articles older than 30 days
+UPLOAD_URL = UPLOAD_DOMAIN + '/rss-feeds/rss_generator.php'
 
-BAD_DESCRIPTIONS = [
-]
+RSS_DEFS = (
+    # parser, name, title, description, domain, domain
+    ('tartuekspress', 'tartuekspress', 'Tartu Ekspress', 'uudised', 'http://tartuekspress.ee', '/index.php?&page=20&type=3']),
+)
 
-BAD_TITLES = [
-]
+BAD_DESCRIPTIONS = (  # filtreeri sõnu sisust
+)
+
+BAD_TITLES = (  # filtreeri sõnu pealkirjadest
+    "eurovisioon",
+)
+
+DICTFILTERS_AMETID = (
+)
 
 HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp',
@@ -42,7 +51,3 @@ HEADERS = {
     'Upgrade-Insecure-Requests': '1',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/91.0',
 }
-
-#                 parser,           name,               title,              description             domain                                  domain_rss (optional)
-RSS_DEFS = []
-RSS_DEFS.append(['tartuekspress',   'tartuekspress',    'Tartu Ekspress',   'uudised',              'http://tartuekspress.ee',              ['/index.php?&page=20&type=3']])  # noqa E241

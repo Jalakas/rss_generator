@@ -6,36 +6,26 @@ import rss_print
 
 def fill_article_dict(articleDataDict, pageTree, domain):
 
-    articleDataDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//div[@class="history-item"]/span[@class="history-date ng-binding"]/text()')
     articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//div[@class="history-item"]/p[@class="history-header"]/a[@class="ng-binding"]/text()[1]')
     articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//div[@class="history-item"]/p[@class="history-header"]/a[@class="ng-binding"]/@href')
 
-    lastArtPubDate = ""
-    iMinus = 0
-
     # remove unwanted content: titles
-    dictList = [
-        " reket",
-        " võidu",
+    dictFilters = (
         "Aktuaalne kaamera",
         "ERR-i teleuudised",
         "ETV spordi",
         "Ilm ",
+        "Kell ",
         "OTSE ",
         "Päevakaja",
         "Raadiouudised",
         "Viipekeelsed uudised",
-    ]
-    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictList, "in", "titles")
+    )
+    articleDataDict = parsers_common.article_data_dict_clean(__file__, articleDataDict, dictFilters, "in", "titles")
 
+    iMinus = 0
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         i = i - iMinus
-
-        # pubDates magic from "11:34" to datetime()
-        curArtPubDate = parsers_common.get(articleDataDict["pubDates"], i)
-        curArtPubDate = parsers_datetime.raw_to_datetime_guess_missing(curArtPubDate, lastArtPubDate, "%Y %m %d ", "%H:%M", -1)
-        lastArtPubDate = curArtPubDate
-        articleDataDict["pubDates"] = parsers_common.list_add_or_assign(articleDataDict["pubDates"], i, curArtPubDate)
 
         # title
         curArtTitle = parsers_common.get(articleDataDict["titles"], i)
@@ -50,7 +40,7 @@ def fill_article_dict(articleDataDict, pageTree, domain):
             pageTree = parsers_common.get_article_tree(domain, curArtUrl, cache='cacheAll')
 
             # author
-            curArtAuthor = parsers_common.xpath_to("single", pageTree, '//article/div[@class="body"]/div/div[@class="meta"]/section/div[@class="byline"]/span/text()')
+            curArtAuthor = parsers_common.xpath_to("single", pageTree, '//article/div[@class="body"]/div/div[@class="meta"]/section/div[@class="byline"]/span', parent=True)
             articleDataDict["authors"] = parsers_common.list_add_or_assign(articleDataDict["authors"], i, curArtAuthor)
 
             # description
@@ -69,6 +59,11 @@ def fill_article_dict(articleDataDict, pageTree, domain):
             if not curArtImg:
                 curArtImg = parsers_common.xpath_to("single", pageTree, '/html/head/meta[@property="image"]/@content')
             articleDataDict["images"] = parsers_common.list_add_or_assign(articleDataDict["images"], i, curArtImg)
+
+            # pubDates from "2022-02-24T14:20:00+02:00 to datetime()
+            curArtPubDate = parsers_common.xpath_to("single", pageTree, '/html/head/meta[@property="article:published_time"]/@content')
+            curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%Y-%m-%dt%H:%M:%S%z")
+            articleDataDict["pubDates"] = parsers_common.list_add_or_assign(articleDataDict["pubDates"], i, curArtPubDate)
 
     articleDataDict = parsers_common.dict_reverse_order(articleDataDict)
 

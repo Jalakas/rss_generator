@@ -14,7 +14,8 @@ def fill_article_dict(articleDataDict, pageTree, domain):
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # description
         curArtDesc = articlePrices[i] + articleDescriptions[i]
-        curArtDesc = curArtDesc.replace('<img src="https://www.stokker.ee/gfx/blank.gif">', "")
+        curArtDesc = curArtDesc.replace('src="https://www.stokker.ee/gfx/blank.gif"', "")
+        curArtDesc = curArtDesc.replace("data-src=", "src=")
         articleDataDict["descriptions"] = parsers_common.list_add_or_assign(articleDataDict["descriptions"], i, curArtDesc)
 
         # image

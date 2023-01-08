@@ -10,14 +10,13 @@ def fill_article_dict(articleDataDict, pageTree, domain):
     articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//div[@class="list-item"]/div[@class="details"]/a[1]/@href')
 
     # remove unwanted content: titles
-    dictList = [
-        "edasi lükatud",
+    dictFilters = (
         "ei toimu",
         "jääb ära",
-        "lükkub edasi",
         "tühistatud",
-    ]
-    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictList, "in", "titles")
+        "välja müüdud",
+    )
+    articleDataDict = parsers_common.article_data_dict_clean(__file__, articleDataDict, dictFilters, "in", "titles")
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # image

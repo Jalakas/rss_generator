@@ -14,7 +14,7 @@ import rss_disk
 import rss_print
 
 
-def cleaned_html(htmlString):
+def html_clean(htmlString):
 
     # Try to parse the provided HTML string using lxml
     # strip all unnecessary information to save space
@@ -39,7 +39,6 @@ def html_change_short_urls(htmlPageString, curDomainShort):
     htmlPageString = htmlPageString.replace('href="//', 'href="http://')
     htmlPageString = htmlPageString.replace('href="./', 'href="' + curDomainShort + '/')
     htmlPageString = htmlPageString.replace('href="/', 'href="' + curDomainShort + '/')
-    rss_print.print_debug(__file__, "html string: " + htmlPageString, 5)
 
     return htmlPageString
 
@@ -65,7 +64,7 @@ def html_first_node(htmlString):
 
 def html_page_cleanup(htmlString):
     if not htmlString:
-        rss_print.print_debug(__file__, "katkestame, tühi sisend: '" + htmlString + "'", 0)
+        rss_print.print_debug(__file__, "tühi sisend html string: '" + htmlString + "'", 1)
         return htmlString
 
     rss_print.print_debug(__file__, "puhastame html stringi üleliigsest jamast", 3)
@@ -86,7 +85,6 @@ def html_page_cleanup(htmlString):
     # remove trackers from links
     htmlString = htmlString.replace("&amp;", "&")
     htmlString = re.sub(r'(&|\?)_[0-9A-Za-z_-]*', "", htmlString)  # delfi
-    htmlString = re.sub(r'=2\.[0-9.-]*', "", htmlString)
     htmlString = re.sub(r'_ga=[0-9.-]*', "", htmlString)  # _ga=2.22935807.513285745.1595741966-250801514.1594127878
     htmlString = re.sub(r'fbclid=[0-9A-Za-z-_]*', "", htmlString)
     htmlString = re.sub(r'gclid=[0-9A-Za-z-_]*', "", htmlString)
@@ -95,6 +93,11 @@ def html_page_cleanup(htmlString):
 
     # fix link without trackers
     htmlString = htmlString.replace("?&", "?")
+
+    # fix site links
+    htmlString = htmlString.replace('href="http://', 'href="https://')
+    htmlString = htmlString.replace("https://twitter.com", "https://mobile.twitter.com")
+    htmlString = htmlString.replace("https://facebook.com", "https://m.facebook.com")
 
     # eemaldame html-i vahelise whitespace-i
     htmlString = re.sub(r"\s\s+(?=<)", "", htmlString)
@@ -164,7 +167,7 @@ def html_remove_single_parents(htmlString):
 
         # kui see on tühi, siis teavitame ja lõpetame
         if not htmlString:
-            rss_print.print_debug(__file__, "child[" + str(i) + "] hankimise lõpptulemus on tühjus: '" + htmlString + "'", 2)
+            rss_print.print_debug(__file__, "child[" + str(i) + "] hankimise lõpptulemus on tühjus: '" + htmlString + "'", 3)
             return htmlString
 
         rss_print.print_debug(__file__, "child[" + str(i) + "] hankimise vahetulemus: '" + htmlString + "'", 4)
@@ -258,21 +261,22 @@ def html_tree_from_document_string(htmlString, caller):
         rss_print.print_debug(__file__, "asume looma html objekti kutsujale: " + caller, 4)
 
     htmlString = htmlString.strip()
+
     if not htmlString:
-        rss_print.print_debug(__file__, "puudub html stringi sisu kutsujal: '" + caller + "'", 0)
+        rss_print.print_debug(__file__, "puudub html stringi sisu kutsujal: '" + caller + "'", 1)
         htmlString = "<html><head></head></html>"
 
     if htmlString.startswith('<?xml version="1.0" encoding="utf-8"?>'):
         # kui unicode ei käi, proovime utf-8 "Unicode strings with encoding declaration are not supported. Please use bytes input or XML fragments without declaration."
         htmlStringUtf = htmlString.encode('utf-8')
-        htmlTree = html.document_fromstring(htmlStringUtf)
-    else:
-        try:
-            htmlTree = html.document_fromstring(htmlString)
-        except Exception as e:
-            rss_print.print_debug(__file__, "ei õnnestunud luua mitteutf-8 html objekti kutsujal: '" + caller + "'", 0)
-            rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
-            rss_print.print_debug(__file__, "ei õnnestunud luua mitteutf-8 html objekti stringist: '" + htmlString + "'", 3)
+        return html.document_fromstring(htmlStringUtf)
+
+    try:
+        htmlTree = html.document_fromstring(htmlString)
+    except Exception as e:
+        rss_print.print_debug(__file__, "ei õnnestunud luua mitteutf-8 html objekti kutsujal: '" + caller + "'", 0)
+        rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
+        rss_print.print_debug(__file__, "ei õnnestunud luua mitteutf-8 html objekti stringist: '" + htmlString + "'", 3)
 
     return htmlTree
 

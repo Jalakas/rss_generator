@@ -4,16 +4,17 @@ import parsers_common
 
 def fill_article_dict(articleDataDict, pageTree, domain):
 
-    articleDataDict["descriptions"] = parsers_common.xpath_to("list", pageTree, '//main/div[@class="content"]/div/div/div[1]/div/div', parent=True)
+    articleDataDict["descriptions"] = parsers_common.xpath_to("list", pageTree, '//main/div[1]/div/div/div[1]/div/div', parent=True)
     articleDataDict["images"] = parsers_common.xpath_to("list", pageTree, '//main/div[1]/div/div/div[1]/div/div/a/div/img/@src')
-    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//main/div[@class="content"]/div/div/div[1]/div/div/div/div[1]/div[2]/a/text()')
-    articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//main/div[@class="content"]/div/div/div[1]/div/div/div/div[1]/div[2]/a/@href')
+    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//main/div[1]/div/div/div[1]/div/div/div/div[1]/div[2]/div[1]/a/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//main/div[1]/div/div/div[1]/div/div/div/div[1]/div[2]/div[1]/a/@href')
 
     # remove unwanted content: titles
-    dictList = [
+    dictFilters = (
         "(uus) raamat",
         "abramova",
         "akvavit",
+        "annie ristiretk",
         "based broccoli",
         "beats of no nation",
         "bisweed",
@@ -35,7 +36,6 @@ def fill_article_dict(articleDataDict, pageTree, domain):
         "liin ",
         "liin",
         "lunchbreak lunchdate",
-        "meie igapäevane avalik ruum",
         "milk",
         "muster",
         "myös",
@@ -54,21 +54,20 @@ def fill_article_dict(articleDataDict, pageTree, domain):
         "soojad suhted",
         "svet nureka",
         "söökladisko",
-        "triinemets.",
+        "triinemets",
         "vitamiin k",
         "zubrovka am",
         "ära kaaguta!",
         "öömaja",
-    ]
-    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictList, "in", "titles")
+    )
+    articleDataDict = parsers_common.article_data_dict_clean(__file__, articleDataDict, dictFilters, "in", "titles")
 
     # remove unwanted content: descriptions
-    dictList = [
-        "#hip hop",
-        "#interview",
+    dictFilters = (
+        "#hip",
         "#rap",
-    ]
-    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictList, "in", "descriptions")
+    )
+    articleDataDict = parsers_common.article_data_dict_clean(__file__, articleDataDict, dictFilters, "in", "descriptions")
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # title

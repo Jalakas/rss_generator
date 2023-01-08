@@ -7,9 +7,14 @@ def fill_article_dict(articleDataDict, pageTree, domain):
 
     articleDataDict["images"] = parsers_common.xpath_to("list", pageTree, '//div[@class="col-sm-6"]/div[@class="post-item"]/a/div/img/@src')
     articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//div[@class="col-sm-6"]/div[@class="post-item"]/a/h3/text()')
-    articleDataDict["urls"] =   parsers_common.xpath_to("list", pageTree, '//div[@class="col-sm-6"]/div[@class="post-item"]/a/@href')
+    articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//div[@class="col-sm-6"]/div[@class="post-item"]/a/@href')
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
+        # titles
+        curArtTitle = parsers_common.get(articleDataDict["titles"], i)
+        curArtTitle = parsers_common.str_remove_clickbait(curArtTitle)
+        articleDataDict["titles"] = parsers_common.list_add_or_assign(articleDataDict["titles"], i, curArtTitle)
+
         if parsers_common.should_get_article_body(i):
             curArtUrl = parsers_common.get(articleDataDict["urls"], i)
 
@@ -17,7 +22,13 @@ def fill_article_dict(articleDataDict, pageTree, domain):
             pageTree = parsers_common.get_article_tree(domain, curArtUrl, cache='cacheAll')
 
             # descriptions
-            curArtDesc = parsers_common.xpath_to("single", pageTree, '//div[@class="col-sm-9"]/p', multi=True)
+            curArtDesc1 = parsers_common.xpath_to("single", pageTree, '//div[@class="lead"]', parent=True)
+            curArtDesc2 = parsers_common.xpath_to("single", pageTree, '//div[@class="text flex-row"]/p', multi=True)
+
+            if not curArtDesc1:
+                curArtDesc1 = parsers_common.xpath_to("single", pageTree, '//div[@class="col-sm-9"]/p', multi=True)
+
+            curArtDesc = curArtDesc1 + '<br>' + curArtDesc2
             articleDataDict["descriptions"] = parsers_common.list_add_or_assign(articleDataDict["descriptions"], i, curArtDesc)
 
             # timeformat magic from "Avaldatud: 14 detsember, 2017" to datetime()

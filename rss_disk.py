@@ -46,7 +46,7 @@ def move_file_to_old_folder(filePath, filename):
 
 def read_file_string_from_disk(osCacheFolderDomainArticle):
     if not os.path.isfile(osCacheFolderDomainArticle):
-        rss_print.print_debug(__file__, "kettal pole lugemiseks faili: " + osCacheFolderDomainArticle, 2)
+        rss_print.print_debug(__file__, "kettal pole lugemiseks faili: " + osCacheFolderDomainArticle, 3)
         return ""
 
     try:

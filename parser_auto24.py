@@ -5,18 +5,17 @@ import parsers_datetime
 
 def fill_article_dict(articleDataDict, pageTree, domain):
 
-    articleDataDict["authors"] =        parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="name"]', parent=True)
-    articleDataDict["descriptions"] =   parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="content"]', parent=True)
-    articleDataDict["pubDates"] =       parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="posttime"]/text()')
-    articleDataDict["titles"] =         parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="title"]/a[3]/text()')
-    articleDataDict["urls"] =           parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="title"]/a[3]/@href')
+    articleDataDict["authors"] = parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="name"]', parent=True)
+    articleDataDict["descriptions"] = parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="content"]', parent=True)
+    articleDataDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="posttime"]/text()')
+    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="title"]/a[3]/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="title"]/a[3]/@href')
 
     # remove unwanted content: titles
-    dictList = [
-        "Hoiatus! Läbisõit 100% keritud",
+    dictFilters = (
         "Kaebused",
-    ]
-    articleDataDict = parsers_common.article_data_dict_clean(articleDataDict, dictList, "in", "titles")
+    )
+    articleDataDict = parsers_common.article_data_dict_clean(__file__, articleDataDict, dictFilters, "in", "titles")
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # description

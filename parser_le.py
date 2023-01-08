@@ -5,10 +5,10 @@ import parsers_datetime
 
 def fill_article_dict(articleDataDict, pageTree, domain):
 
-    articleDataDict["images"] =     parsers_common.xpath_to("list", pageTree, '//div[@class="td-image-container"]/div[@class="td-module-thumb"]/a/span/@style')
-    articleDataDict["pubDates"] =   parsers_common.xpath_to("list", pageTree, '//div[@class="td-module-meta-info"]/div[@class="td-editor-date"]/span/span/time/@datetime')
-    articleDataDict["titles"] =     parsers_common.xpath_to("list", pageTree, '//div[@class="td-module-meta-info"]/h3[@class="entry-title td-module-title"]/a/text()')
-    articleDataDict["urls"] =       parsers_common.xpath_to("list", pageTree, '//div[@class="td-module-meta-info"]/h3[@class="entry-title td-module-title"]/a/@href')
+    articleDataDict["images"] = parsers_common.xpath_to("list", pageTree, '//div[@class="td-image-container"]/div[@class="td-module-thumb"]/a/span/@style')
+    articleDataDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//div[@class="td-module-meta-info"]/div[@class="td-editor-date"]/span/span/time/@datetime')
+    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//div[@class="td-module-meta-info"]/h3[@class="entry-title td-module-title"]/a/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//div[@class="td-module-meta-info"]/h3[@class="entry-title td-module-title"]/a/@href')
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # pubDates magic from "2020-02-14T17:22:25+00:00" to datetime()
@@ -28,7 +28,6 @@ def fill_article_dict(articleDataDict, pageTree, domain):
 
             # description
             curArtDesc = parsers_common.xpath_to("single", pageTree, '//div[@class="td-post-content tagdiv-type"]', parent=True)
-            curArtDesc = curArtDesc.split("</figure>")[-1]
             # asendame jama
             curArtDesc = curArtDesc.replace('<h2 style="text-align: center">Artikli lugemiseks tellige digipakett või <strong><a href="https://online.le.ee/tellimine/">logige</a></strong> sisse!</h2>', "")
             curArtDesc = curArtDesc.replace('<h3 id="wc-comment-header">Kommenteeri</h3>', "")

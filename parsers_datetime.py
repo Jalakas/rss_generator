@@ -14,6 +14,10 @@ import rss_print
 
 
 def add_missing_date_to_string(curDatetimeString, fullDatetimeFormat, addedDateFormat):
+    if not curDatetimeString:
+        rss_print.print_debug(__file__, "tühi sisend: " + curDatetimeString, 0)
+        return curDatetimeString
+
     if len(curDatetimeString) < len(fullDatetimeFormat):
         curDatetimeString = add_value_to_time_string(curDatetimeString, addedDateFormat)
         rss_print.print_debug(__file__, "lisasime ajale 'kuupäeva' osa: " + curDatetimeString, 3)
@@ -28,7 +32,7 @@ def add_value_to_time_string(curArtPubDate, curDateFormat, offsetDays=0):
     @curDateFormat = algusesse lisatav osa nt: 2019.
     @offsetDays = 0 täna, -1 eile
     """
-    datetimeOffset = datetime_offset_from_format(offsetDays)
+    datetimeOffset = timedelta(days=offsetDays)
 
     curArtPubDate = (datetime.now() + datetimeOffset).strftime(curDateFormat) + curArtPubDate
     rss_print.print_debug(__file__, "lisasime tänasele kellaajale kuupäeva: " + curArtPubDate, 3)
@@ -36,20 +40,11 @@ def add_value_to_time_string(curArtPubDate, curDateFormat, offsetDays=0):
     return curArtPubDate
 
 
-def datetime_offset_from_format(offsetDays):
-    datetimeOffset = timedelta(days=offsetDays)
-    if offsetDays:
-        rss_print.print_debug(__file__, "" + str(datetimeOffset), 5)
-
-    return datetimeOffset
-
-
 def float_to_datetime_rfc2822(floatDateTime):
     """
     Teeb sisse antud floadist rfc2822 aja.
     Süntaksi seletus: https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
     """
-    rss_print.print_debug(__file__, "floatDateTime = '" + str(floatDateTime) + "'", 5)
     datetimeRFC2822 = formatdate(floatDateTime, True, True)
     rss_print.print_debug(__file__, "datetimeRFC2822 = '" + str(datetimeRFC2822) + "'", 4)
 
@@ -60,7 +55,7 @@ def guess_datetime(curArtPubDate):
     """
     Süntaksi seletus: https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior.
     """
-    curArtPubDate = curArtPubDate.strip(", ")
+    curArtPubDate = curArtPubDate.strip("», ")
     curArtPubDate = curArtPubDate.lower()
 
     # NB väiketähed, järjekord on oluline
@@ -71,22 +66,32 @@ def guess_datetime(curArtPubDate):
             if curArtPubDate.find("-") > -1:
                 # "14-04-2020, 00:05 am" to datetime()
                 curArtPubDate = raw_to_datetime(curArtPubDate, "%d-%m-%Y, %H:%M %p")
-            else:
+            elif curArtPubDate.find(".") > -1:
+                # "23.10.2022 23:59 pm" to datetime()
+                curArtPubDate = raw_to_datetime(curArtPubDate, "d.%m.%Y %H:%M %p")
+            elif curArtPubDate.find(", ") > -1 and curArtPubDate[2] == ' ':
                 # "06 26, 2019 8:07 pm" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate[2:], "%m %d, %Y %I:%M %p")
+                curArtPubDate = raw_to_datetime(curArtPubDate, "%m %d, %Y %I:%M %p")
+            elif curArtPubDate.find(", ") > -1:
+                # "23.10.2022, 18:10 pm" to datetime()
+                curArtPubDate = raw_to_datetime(curArtPubDate, "d.%m.%Y, %H:%M %p")
         elif curArtPubDate.find("-") > -1:
-            # "21-11-16, 04:11" to datetime()
-            curArtPubDate = raw_to_datetime(curArtPubDate, "%d-%m-%y,%H:%M")
+            if curArtPubDate.find(", ") == 10:
+                # "21-11-2016, 04:11" to datetime()
+                curArtPubDate = raw_to_datetime(curArtPubDate, "%d-%m-%Y, %H:%M")
+            elif curArtPubDate.find(", ") > -1:
+                # "21-11-16, 04:11" to datetime()
+                curArtPubDate = raw_to_datetime(curArtPubDate, "%d-%m-%y, %H:%M")
+            else:
+                # "21-11-16,04:11" to datetime()
+                curArtPubDate = raw_to_datetime(curArtPubDate, "%d-%m-%y,%H:%M")
         elif curArtPubDate.find(". ") > -1:
-            if curArtPubDate.find(",") > -1:
+            if curArtPubDate.find(", ") > -1:
                 # "26. 06 2019, 18:07:05" to datetime()
                 curArtPubDate = raw_to_datetime(curArtPubDate, "%d. %m %Y, %H:%M:%S")
             else:
                 # "01. 03 2021 14:34" to datetime()
                 curArtPubDate = raw_to_datetime(curArtPubDate, "%d. %m %Y %H:%M")
-        elif curArtPubDate.find("»") > -1:
-            # "» 29 12 2017 13:46" to datetime()
-            curArtPubDate = raw_to_datetime(curArtPubDate, "» %d %m %Y %H:%M")
         elif curArtPubDate.find(":") > -1:
             if curArtPubDate.find("t,") > -1 and curArtPubDate.find(":") > curArtPubDate.find(","):
                 # "09 02 t, 2021 14:39" to datetime()
@@ -107,9 +112,19 @@ def guess_datetime(curArtPubDate):
             else:
                 # "09 10 2019 18:43" to datetime()
                 curArtPubDate = raw_to_datetime(curArtPubDate, "%d %m %Y %H:%M")
-    elif len(curArtPubDate) <= 10:
+    elif len(curArtPubDate) == 10:
         # "09.10.2019" to datetime()
         curArtPubDate = raw_to_datetime(curArtPubDate, "%d.%m.%Y")
+    elif len(curArtPubDate) == 8:
+        # "09:10 pm" to datetime()
+        rss_print.print_debug(__file__, "lisame puuduva kuupäeva", 2)
+        curArtPubDate = add_missing_date_to_string(curArtPubDate, "23.10.2022 13:35 pm", "%d.%m.%Y ")
+        curArtPubDate = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M %p")
+    elif len(curArtPubDate) == 5:
+        # "09:10" to datetime()
+        rss_print.print_debug(__file__, "lisame puuduva kuupäeva", 2)
+        curArtPubDate = add_missing_date_to_string(curArtPubDate, "23.10.2022 13:35", " %d.%m.%Y ")
+        curArtPubDate = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M")
 
     return curArtPubDate
 
@@ -154,13 +169,9 @@ def raw_to_datetime(rawDateTimeText, rawDateTimeSyntax):
 
     if not curDateTimeText:
         rss_print.print_debug(__file__, "tühi ajasisend: curDateTimeText = '" + curDateTimeText + "'", 0)
-    else:
-        rss_print.print_debug(__file__, "curDateTimeText = '" + curDateTimeText + "'", 5)
 
     if not rawDateTimeSyntax:
         rss_print.print_debug(__file__, "tühi ajasisend: rawDateTimeSyntax = '" + rawDateTimeSyntax + "'", 0)
-    else:
-        rss_print.print_debug(__file__, "rawDateTimeSyntax = '" + rawDateTimeSyntax + "'", 5)
 
     datetimeFloat = raw_to_float(curDateTimeText, rawDateTimeSyntax)
     datetimeRFC2822 = float_to_datetime_rfc2822(datetimeFloat)
@@ -204,48 +215,57 @@ def raw_to_float(rawDateTimeText, rawDateTimeSyntax):
     try:
         datetimeStruct = time.strptime(curDateTimeText, rawDateTimeSyntax)
         datetimeList = list(datetimeStruct)
-
-        if datetimeList[0] == 1900:
-            if datetimeList[1] > int(time.strftime('%m')):
-                rss_print.print_debug(__file__, "curDateTimeText = '" + curDateTimeText + "', muudame puuduva aasta eelmiseks aastaks", 0)
-                datetimeList[0] = int(time.strftime('%Y')) - 1
-            else:
-                rss_print.print_debug(__file__, "curDateTimeText = '" + curDateTimeText + "', muudame puuduva aasta praeguseks aastaks", 0)
-                datetimeList[0] = int(time.strftime('%Y'))
-
-        datetimeTuple = tuple(datetimeList)
-        datetimeFloat = time.mktime(datetimeTuple)
     except Exception as e:
         rss_print.print_debug(__file__, "curDateTimeText = '" + curDateTimeText + "' dekodeerimine rawDateTimeSyntax = '" + rawDateTimeSyntax + "' EBAõnnestus, tagastame nulli", 0)
         rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
         return 0
+
+    if datetimeList[0] == 1900:
+        if datetimeList[1] > int(time.strftime('%m')):
+            rss_print.print_debug(__file__, "curDateTimeText = '" + curDateTimeText + "', muudame puuduva aasta eelmiseks aastaks", 0)
+            datetimeList[0] = int(time.strftime('%Y')) - 1
+        else:
+            rss_print.print_debug(__file__, "curDateTimeText = '" + curDateTimeText + "', muudame puuduva aasta praeguseks aastaks", 0)
+            datetimeList[0] = int(time.strftime('%Y'))
+
+    datetimeTuple = tuple(datetimeList)
+    datetimeFloat = time.mktime(datetimeTuple)
 
     return datetimeFloat
 
 
 def remove_weekday_strings(rawDateTimeText):
     rawDateTimeText = rawDateTimeText.lower()
+
     # est
-    rawDateTimeText = rawDateTimeText.replace('esmaspäev', "").replace('teisipäev', "").replace('kolmapäev', "")
-    rawDateTimeText = rawDateTimeText.replace('neljapäev', "").replace('reede', "").replace('laupäev', "").replace('pühapäev', "")
+    rawDateTimeText = rawDateTimeText.replace('esmaspäev', "")
+    rawDateTimeText = rawDateTimeText.replace('teisipäev', "")
+    rawDateTimeText = rawDateTimeText.replace('kolmapäev', "")
+    rawDateTimeText = rawDateTimeText.replace('neljapäev', "")
+    rawDateTimeText = rawDateTimeText.replace('reede', "")
+    rawDateTimeText = rawDateTimeText.replace('laupäev', "")
+    rawDateTimeText = rawDateTimeText.replace('pühapäev', "")
 
     return rawDateTimeText
 
 
-def replace_string_with_timeformat(inpString, stringToReplace, dateTimeformat, offsetDays=0):
+def replace_string_with_timeformat(inpString, stringReplaceFrom, dateTimeformat, offsetDays=0, offsetHours=0, offsetMinutes=0):
     """
     Asendab sisendis etteantud stringi mingit formaati ajaga.
     Sisendid:
         inpString="eile, 23:34"
-        stringToReplace="eile",
+        stringReplaceFrom="eile",
         dateTimeformat="%d %m %Y",
         offsetDays=-1
     Väljund: 24 05 2020, 23:34
     """
-    if stringToReplace in inpString:
-        datetimeOffset = datetime_offset_from_format(offsetDays)
-        inpString = inpString.replace(stringToReplace, str((datetime.now() + datetimeOffset).strftime(dateTimeformat)))
-        rss_print.print_debug(__file__, "asendasime stringis sõna ajaga: '" + stringToReplace + "' -> " + inpString, 3)
+    if stringReplaceFrom in inpString:
+        datetimeOffset = timedelta(days=int(offsetDays), hours=int(offsetHours), minutes=int(offsetMinutes))
+        datetimeArray = datetime.now() + datetimeOffset
+        stringReplaceTo = datetimeArray.strftime(dateTimeformat)
+
+        inpString = inpString.replace(stringReplaceFrom, stringReplaceTo)
+        rss_print.print_debug(__file__, "asendasime stringis sõna ajaga: '" + stringReplaceFrom + "' -> " + inpString, 3)
 
     return inpString
 

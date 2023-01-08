@@ -12,12 +12,10 @@ def fill_article_dict(articleDataDict, pageTree, domain):
 
     parentPages = {}
     parentPages["stamps"] = parsers_common.xpath_to("list", pageTree, '//div[@data-lang="Vastuseid"]/a/text()')
+    if not parentPages["stamps"]:
+        parentPages["stamps"] = parsers_common.xpath_to("list", pageTree, '//div[@class="threadbit_stats align_right smalltext"]/span[1]/text()')
     parentPages["titles"] = parsers_common.xpath_to("list", pageTree, '//span[@class=" subject_old"]/a/text()')
     parentPages["urls"] = parsers_common.xpath_to("list", pageTree, '//span[@class=" subject_old"]/a/@href')
-
-    # remove unwanted content: titles
-    #dictList = []
-    #parentPages = parsers_common.article_data_dict_clean(parentPages, dictList, "in", "titles")
 
     # teemade läbivaatamine
     for i in parsers_common.article_urls_range(parentPages["urls"]):
@@ -28,19 +26,23 @@ def fill_article_dict(articleDataDict, pageTree, domain):
             curParentUrl = curParentUrl + "&page=-1"
             curParentUrl = parsers_common.str_domain_url(domain, curParentUrl)
             parentPagesStamp = parsers_common.get(parentPages["stamps"], i)
+
             # load article into tree
             pageTree = parsers_common.get_article_tree(domain, curParentUrl, cache='cacheStamped', pageStamp=parentPagesStamp)
 
             articlePostsDict = {}
-            articlePostsDict["authors"] =       parsers_common.xpath_to("list", pageTree, '//div[@class="author_information"]/strong/span[@class="largetext"]/a/text()')
-            articlePostsDict["descriptions"] =  parsers_common.xpath_to("list", pageTree, '//div[@class="post_body scaleimages"]', parent=True)
-            articlePostsDict["pubDates"] =      parsers_common.xpath_to("list", pageTree, '//div[@class="post_head"]/span[@class="post_date"]', parent=True)
-            articlePostsDict["urls"] =          parsers_common.xpath_to("list", pageTree, '//div[@class="post_content"]/div[@class="post_head"]/div/strong/a/@href')
+            articlePostsDict["authors"] = parsers_common.xpath_to("list", pageTree, '//div[starts-with(@class,"author_information")]/strong/span[@class="largetext"]/a/text()')
+            articlePostsDict["descriptions"] = parsers_common.xpath_to("list", pageTree, '//div[@class="post_body scaleimages"]', parent=True)
+            articlePostsDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//div[@class="post_head"]/span[@class="post_date"]/span[@class!="post_edit"]/@title')
+            if not articlePostsDict["pubDates"]:
+                articlePostsDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//div[@class="post_head"]/span[@class="post_date"]/text()')
+            articlePostsDict["urls"] = parsers_common.xpath_to("list", pageTree, '//div[@class="post_head"]/div/strong/a/@href')
 
             # teema postituste läbivaatamine
             for j in parsers_common.article_posts_range(articlePostsDict["urls"], maxArticlePosts):
                 # author
-                articleDataDict["authors"] = parsers_common.list_add(articleDataDict["authors"], j, parsers_common.get(articlePostsDict["authors"], j))
+                curArtAuthor = parsers_common.get(articlePostsDict["authors"], j)
+                articleDataDict["authors"] = parsers_common.list_add(articleDataDict["authors"], j, curArtAuthor)
 
                 # description
                 curArtDesc = parsers_common.get(articlePostsDict["descriptions"], j)
@@ -50,14 +52,10 @@ def fill_article_dict(articleDataDict, pageTree, domain):
 
                 # pubDates
                 curArtPubDate = parsers_common.get(articlePostsDict["pubDates"], j)
-                curArtPubDate = parsers_common.str_lchop(curArtPubDate, '<span title="')
-                curArtPubDate = curArtPubDate.split(" <span class")[0]
-                if "Eile" in curArtPubDate or "Täna" in curArtPubDate:
-                    curArtPubDate = curArtPubDate.split('">')[1]
-                    curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, "Eile</span>", "%d-%m-%Y", offsetDays=-1)
-                    curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, "Täna</span>", "%d-%m-%Y", offsetDays=0)
-                else:
-                    curArtPubDate = curArtPubDate.split('">')[0]
+                if "tund" in curArtPubDate:
+                    curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, curArtPubDate, "%d-%m-%y, %H:%M", offsetHours=curArtPubDate.split(" ")[0])
+                elif "minut" in curArtPubDate:
+                    curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, curArtPubDate, "%d-%m-%y, %H:%M", offsetMinutes=curArtPubDate.split(" ")[0])
                 curArtPubDate = parsers_datetime.guess_datetime(curArtPubDate)
                 articleDataDict["pubDates"] = parsers_common.list_add(articleDataDict["pubDates"], j, curArtPubDate)
 

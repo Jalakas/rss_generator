@@ -5,9 +5,9 @@ import parsers_datetime
 
 def fill_article_dict(articleDataDict, pageTree, domain):
 
-    articleDataDict["pubDates"] =   parsers_common.xpath_to("list", pageTree, '//li[@class="b-posts__list-item"]/p[@class="b-posts__list-item-summary"]/text()')
-    articleDataDict["titles"] =     parsers_common.xpath_to("list", pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/text()')
-    articleDataDict["urls"] =       parsers_common.xpath_to("list", pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/@href')
+    articleDataDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//li[@class="b-posts__list-item"]/p[@class="b-posts__list-item-summary"]/text()')
+    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//li[@class="b-posts__list-item"]/h2[@class="b-posts__list-item-title"]/a/@href')
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # pubDates magic from "30.01.2021" to datetime()

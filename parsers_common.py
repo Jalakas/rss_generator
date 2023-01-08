@@ -15,43 +15,75 @@ import rss_print
 import rss_stat
 
 
-def article_data_dict_clean(articleDataDict, dictList, dictCond, dictField):
+def article_data_dict_clean(fileName, articleDataDict, inpFilters, inpCond, dictField):
     """
     Eemaldame tingimusele vastavad kanded.
     """
     if not articleDataDict[dictField]:
-        rss_print.print_debug(__file__, "tühi sisend: articleDataDict", 0)
+        rss_print.print_debug(__file__, "tühi sisend: articleDataDict", 1)
         return articleDataDict
 
-    if not dictList:
-        rss_print.print_debug(__file__, "tühi sisend: dictList", 0)
+    if not inpFilters:
+        rss_print.print_debug(__file__, "tühi sisend: inpFilters", 0)
         return articleDataDict
+
+    # muudame kõik filtri tekstid väiketähtedeks
+    sortedFilters = []
+    for inpFilter in inpFilters:
+        sortedFilters.append(inpFilter.casefold())
+
+    # kui eemaldamise tingimuseks on filtri tekstis sisaldumine, siis eelistame lühemaid filtreid eespool
+    if inpCond == "in":
+        sortedFilters.sort(key=len)
+    # kui eemaldamise tingimuseks on filtri tekstiga kokkulangemine, siis eelistame pikemaid filtreid eespool, saame kedratavaid liste varem väiksemaks
+    # kui eemaldamise tingimuseks on filtri tekstist puudumine, siis eelistame pikemaid filtreid eespool
+    elif (inpCond == "==") or (inpCond == "not in"):
+        sortedFilters.sort(key=len, reverse=True)
+
+    if len(inpFilters) != len(set(sortedFilters)):
+        rss_print.print_debug(__file__, "inpFilters sisaldab duplikaate", 0)
+        for sortedFilter in sortedFilters:
+            rss_print.print_debug(__file__, "sortedFilter: " + sortedFilter, 0)
 
     i = 0
+    foundLast = False
+    found = False
+    lastSortedFilter = ''
+    lastArticleDataDictElem = ''
     while i < len(articleDataDict[dictField]):
-        curArticleDictElem = articleDataDict[dictField][i]
-        curArticleDictElem = curArticleDictElem.casefold()
-        rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + str(len(articleDataDict[dictField])) + ") kontrollime: " + curArticleDictElem[0:800], 3)
-
-        found = False
-        for dictListElem in dictList:
-            dictListElem = dictListElem.casefold()
-            if dictCond == "not in" and dictListElem not in curArticleDictElem:
-                found = True
-                break
-            if dictCond == "in" and dictListElem in curArticleDictElem:
-                found = True
-                break
-            if dictCond == "==" and dictListElem == curArticleDictElem:
-                found = True
-                break
+        articleDataDictElem = articleDataDict[dictField][i]
+        articleDataDictElem = articleDataDictElem.casefold()
 
         # kontrollime eemaldamistingimusele vastamist
-        if found is True:
-            rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + str(len(articleDataDict[dictField])) + ") tingimus täidetud: '" + dictListElem + "' " + dictCond + " '" + curArticleDictElem + "'", 2)
+        if lastArticleDataDictElem and lastArticleDataDictElem == articleDataDictElem:
+            foundLast = True
+        else:
+            for sortedFilter in sortedFilters:
+                if inpCond == "in" and sortedFilter in articleDataDictElem:
+                    found = True
+                    break
+                if inpCond == "==" and sortedFilter == articleDataDictElem:
+                    found = True
+                    break
+                if inpCond == "not in" and sortedFilter not in articleDataDictElem:
+                    found = True
+                    break
+
+        if foundLast is True:
+            rss_print.print_debug(__file__, "(" + str(i + 1) + "/" + str(len(articleDataDict[dictField])) + ") kanne sama mis eelmine filtreeritud: '" + lastSortedFilter + "' " + inpCond + " '" + articleDataDictElem + "'", 2)
             articleDataDict = dict_del_article_index(articleDataDict, i)
+            rss_stat.save_string_stat(rss_config.PATH_FILENAME_FILTER, True, fileName + ".'" + sortedFilter + "' " + inpCond, True)
+            foundLast = False
+        elif found is True:
+            rss_print.print_debug(__file__, "(" + str(i + 1) + "/" + str(len(articleDataDict[dictField])) + ") kande filtreerimistingimus täidetud: '" + sortedFilter + "' " + inpCond + " '" + articleDataDictElem + "'", 2)
+            articleDataDict = dict_del_article_index(articleDataDict, i)
+            rss_stat.save_string_stat(rss_config.PATH_FILENAME_FILTER, True, fileName + ".'" + sortedFilter + "' " + inpCond, True)
+            found = False
+            lastSortedFilter = sortedFilter
+            lastArticleDataDictElem = articleDataDictElem
         else:
             i += 1
+            rss_stat.save_string_stat(rss_config.PATH_FILENAME_FILTER, True, fileName + ".'" + sortedFilter + "' " + inpCond, False)
 
     return articleDataDict
 
@@ -72,7 +104,7 @@ def article_urls_range(articleUrls):
     Esimesest edasi kuni objektide lõpuni.
     """
     articleUrlsLen = len(articleUrls)
-    if articleUrlsLen == 0:
+    if not articleUrlsLen:
         retRange = range(0)
         rss_print.print_debug(__file__, "xpath parsimisel leitud artikleid: " + str(articleUrlsLen), 1)
     else:
@@ -94,7 +126,7 @@ def bytes_to_str(inpBytes, inpEncoding):
             rss_print.print_debug(__file__, "sisendis puudub kodeering, proovime dekodeerida ilma", 0)
             retString = inpBytes.decode()
     except Exception as e:
-        rss_print.print_debug(__file__, "vaikimisi '" + inpEncoding + "' dekodeerimine EBAõnnestus, proovime vigade ignoreerimisega", 0)
+        rss_print.print_debug(__file__, "vaikimisi '" + inpEncoding + "' dekodeerimine EBAõnnestus, proovime vigade ignoreerimisega", 1)
         rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
         retString = inpBytes.decode(inpEncoding, "replace")
 
@@ -128,7 +160,8 @@ def dict_reverse_order(articleDataDict):
             if maxLen == -1:
                 maxLen = curLen
             elif maxLen != curLen:
-                rss_print.print_debug(__file__, "mittekonsistentse pikkusega dict, katkestame", 0)
+                rss_print.print_debug(__file__, "mittekonsistentse pikkusega dict, loobume pööramisest", 0)
+                dict_stats(articleDataDict)
                 return articleDataDict
 
     rss_print.print_debug(__file__, "pöörame suuna", 2)
@@ -210,15 +243,16 @@ def fix_quatation_tags(curString, oldTagStart, oldTagEnd, newTagStart, newTagEnd
     return curString
 
 
-def get_variable_name(variable, globalVariables=globals().copy()):
-    """ Get Variable Name as String by comparing its ID to globals() Variables' IDs.
-
+def get_variable_name(variable):
+    """
+        Get Variable Name as String by comparing its ID to globals() Variables' IDs.
         args:
             variable(var): Variable to find name for (Obviously this variable has to exist)
 
         kwargs:
             globalVariables(dict): Copy of the globals() dict (Adding to Kwargs allows this function to work properly when imported from another .py)
     """
+    globalVariables = globals().copy()
     for globalVariable in globalVariables:
         if id(variable) == id(globalVariables[globalVariable]):  # If our Variable's ID matches this Global Variable's ID...
             return globalVariable  # Return its name from the Globals() dict
@@ -239,7 +273,7 @@ def get(array, index, printWarning=1):
             rss_print.print_debug(__file__, "array-l '" + str(get_variable_name(array)) + "' puudub index=" + str(index), 0)
             rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
 
-            return ""
+    return ""
 
 
 def get_article_tree(curDomainShort, curString, cache, pageStamp=""):
@@ -267,7 +301,7 @@ def get_article_tree(curDomainShort, curString, cache, pageStamp=""):
                 rss_print.print_debug(__file__, "cache==" + str(cache) + ", proovime enne internetipäringut kettalt lugeda: " + curString + "#" + pageStamp, 3)
                 htmlPageString = rss_disk.get_url_string_from_disk(curString + "#" + pageStamp)
             else:
-                rss_print.print_debug(__file__, "cache==" + str(cache) + ", aga puudub pageStamp: '" + pageStamp + "'", 0)
+                rss_print.print_debug(__file__, "cache==" + str(cache) + ", aga puudub pageStamp: '" + pageStamp + "'", 1)
                 htmlPageString = ""
 
             if not htmlPageString:
@@ -383,43 +417,17 @@ def str_cleanup_description(curString):
 
     curString = str_cleanup_title(curString)
 
-    # br
-    curString = curString.replace("\r\n", "<br>")
-    curString = curString.replace("\n", "<br>")
-    curString = curString.replace(" <br>", "<br>")
-    curString = curString.replace("<br/>", "<br>")
-    curString = curString.replace("<br> ", "<br>")
-    curString = curString.replace("<br><br>", "<br>")
+    curString = curString + "."
 
-    # change elements
-    curString = curString.replace("</blockquote><br>", "</blockquote>")
-    curString = curString.replace("</cite>", "</p>")
-    curString = curString.replace("</strong>", "</b>")
-    curString = curString.replace("</td>", "</p>")
-    curString = curString.replace("<blockquote><br>", "<blockquote>")
-    curString = curString.replace("<br><blockquote>", "<blockquote>")
-    curString = curString.replace("<cite>", "<p>")
-    curString = curString.replace("<strong>", "<b>")
-    curString = curString.replace("<td ", "<p ")
-
-    # div
-    curString = curString.replace("<br><div>", "<div>")
-    curString = curString.replace("<div></div>", "")
-
-    # i
-    curString = curString.replace("<i></i>", "")
-
-    # p
-    curString = curString.replace(" </p>", "</p>")
-    curString = curString.replace("</p> ", "</p>")
-    curString = curString.replace("<p> ", "<p>")
-    curString = curString.replace("<p></p>", "")
-    curString = curString.replace("<p><br>", "<p>")
+    curString = curString.replace("?quot;", '"')
 
     # remove needless dublicates
-    curString = curString.replace(")))", ")").replace("))", ")")
-    curString = curString.replace(",,", ",")
-    curString = curString.replace("   ", " ").replace("  ", " ")
+    while "))" in curString:
+        curString = curString.replace("))", ")")
+    while ",," in curString:
+        curString = curString.replace(",,", ",")
+    while "  " in curString:
+        curString = curString.replace("  ", " ")
 
     # remove emoticons
     curString = curString.replace(" :", ": ").replace(":  ", ": ")
@@ -433,7 +441,22 @@ def str_cleanup_description(curString):
     curString = curString.replace("; -)", "").replace(";-)", "").replace("; -).", ".").replace(";-).", ".")
 
     # replace
-    curString = curString.replace("?quot;", '"')
+    curString = curString.replace(" natsi ", " natsionaalsotsialismi ")
+    curString = curString.replace(" orki", " tibla")
+    curString = curString.replace(" õlud", " õlut")
+    curString = curString.replace("Orki", "tibla")
+    curString = curString.replace("aksitu", "aksineeritu")
+    curString = curString.replace("axer", "akser")
+    curString = curString.replace("axi", "aktsi")
+    curString = curString.replace("axxi", "aktsi")
+    curString = curString.replace("axz", "akts")
+    curString = curString.replace("inflatsiooni", "hinnatõusu")
+    curString = curString.replace("mordor", "venemaa")
+    curString = curString.replace("mordori", "venemaa")
+    curString = curString.replace("natsid", "natsionaalsotsialistid")
+    curString = curString.replace("natsis", "natsionaalsotsialis")
+    curString = curString.replace("ohepöör", "ahapöör")
+    curString = curString.replace("utovabad", "juvabad")
 
     # add space after symbol
     curString = re.sub(r"\!(?=[A-ZÕÄÖÜ])", "! ", curString)  # fix: add space after "!"
@@ -448,7 +471,6 @@ def str_cleanup_description(curString):
     curString = curString.replace(":\"", ": \"")
 
     # remove space before symbol
-    curString = curString.replace("  ", " ")
     curString = curString.replace(" !", "!")
     curString = curString.replace(" ) ", ") ")
     curString = curString.replace(" )", ") ")
@@ -483,52 +505,93 @@ def str_cleanup_description(curString):
     curString = curString.replace("- ", " - ").replace("- - ", "-- ").replace("-- ", " -- ").replace(" - ", " -- ")  # to change " - " to " -- ", and keep others
     curString = curString.replace(".... ", "... ").replace(".. ", ". ").replace(".. ", "... ")  # to remove '.. ', and keep '... '
 
-    curString = curString + ". "
-
     return curString
 
 
-def str_cleanup_post(inpList):
-    for i, curString in enumerate(inpList):
-        # remove attributes
-        curString = re.sub(r' alt=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' aria-controls=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' border=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' cellpadding=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' cellspacing=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' class=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' clear=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' content=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' data-[\s\S]*?=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' data-[\s\S]*?=(\')[\s\S]*?(\')', "", curString)
-        curString = re.sub(r' dir=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' id=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' itemprop=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' itemscope', "", curString)
-        curString = re.sub(r' itemtype=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' rel=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' role=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' srcset=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' style=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' target=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' width=(\")[\s\S]*?(\")', "", curString)
-        curString = re.sub(r' zoompage-fontsize=(\")[\s\S]*?(\")', "", curString)
+def str_cleanup_post(curString):
+    # remove attributes
+    curString = re.sub(r' alt=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' aria-[\s\S]*?=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' border=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' cellpadding=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' cellspacing=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' class=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' clear=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' content=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' data-[\s\S]*?=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' data-[\s\S]*?=(\')[\s\S]*?(\')', "", curString)
+    curString = re.sub(r' dir=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' draggable=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' id=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' itemprop=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' itemscope', "", curString)
+    curString = re.sub(r' itemtype=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' lang=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' loading=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' rel=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' role=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' srcset=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' style=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' style=(\')[\s\S]*(\')', "", curString)
+    curString = re.sub(r' tabindex=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' target=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' width=(\")[\s\S]*?(\")', "", curString)
+    curString = re.sub(r' zoompage-fontsize=(\")[\s\S]*?(\")', "", curString)
 
-        # remove elements
-        curString = curString.replace("</circle>", "")
-        curString = curString.replace("</path>", "")
-        curString = curString.replace("</span>", "")
-        curString = curString.replace("</svg>", "")
-        curString = curString.replace("<hr>", "")
-        curString = curString.replace("<meta>", "")
-        curString = re.sub(r'<circle[\s\S]*?>', "", curString)
-        curString = re.sub(r'<path[\s\S]*?>', "", curString)
-        curString = re.sub(r'<span[\s\S]*?>', "", curString)
-        curString = re.sub(r'<svg[\s\S]*?>', "", curString)
+    # remove elements
+    curString = curString.replace("</circle>", "")
+    curString = curString.replace("</path>", "")
+    curString = curString.replace("</span>", "")
+    curString = curString.replace("</svg>", "")
+    curString = re.sub(r'<circle[\s\S]*?>', "", curString)
+    curString = re.sub(r'<path[\s\S]*?>', "", curString)
+    curString = re.sub(r'<span[\s\S]*?>', "", curString)
+    curString = re.sub(r'<svg[\s\S]*?>', "", curString)
 
-        inpList[i] = curString
+    # br
+    curString = curString.replace("\r\n", "<br>")
+    curString = curString.replace("\n", "<br>")
+    curString = curString.replace(" <br>", "<br>")
+    curString = curString.replace("<br/>", "<br>")
+    curString = curString.replace("<br> ", "<br>")
 
-    return inpList
+    # change elements
+    curString = curString.replace("</blockquote><br>", "</blockquote>")
+    curString = curString.replace("</cite>", "</p>")
+    curString = curString.replace("</strong>", "</b>")
+    curString = curString.replace("</td>", "</p>")
+    curString = curString.replace("<blockquote><br>", "<blockquote>")
+    curString = curString.replace("<br><blockquote>", "<blockquote>")
+    curString = curString.replace("<cite>", "<p>")
+    curString = curString.replace("<strong>", "<b>")
+    curString = curString.replace("<td ", "<p ")
+
+    # remove elements
+    curString = curString.replace("<hr>", "")
+    curString = curString.replace("<meta>", "")
+
+    # remove empty pairs
+    while "<div></div>" in curString:
+        curString = curString.replace("<div></div>", "")
+    while "</div><div>" in curString:
+        curString = curString.replace("</div><div>", "<br>")
+    curString = curString.replace("<g></g>", "")
+    curString = curString.replace("<i></i>", "")
+
+    # div
+    curString = curString.replace("<br><div>", "<div>")
+
+    # p
+    curString = curString.replace(" </p>", "</p>")
+    curString = curString.replace("</p> ", "</p>")
+    curString = curString.replace("<p> ", "<p>")
+    curString = curString.replace("<p></p>", "")
+    curString = curString.replace("<p><br>", "<p>")
+
+    while "<br><br>" in curString:
+        curString = curString.replace("<br><br>", "<br>")
+
+    return curString
 
 
 def str_cleanup_title(curString):
@@ -558,6 +621,7 @@ def str_fix_url_begginning(curString):
     curString = curString.replace("//", "/")
     curString = curString.replace("https:/", "https://")
     curString = curString.replace("http:/", "http://")
+
     return curString
 
 
@@ -569,21 +633,23 @@ def str_lchop(curString, stripString):
         rss_print.print_debug(__file__, "sisend tühi, katkestame: stripString = '" + str(stripString) + "'", 0)
         return curString
 
-    # constant
     stripStringLen = len(stripString)
 
-    while curString.startswith(stripString):
-        curString = curString[stripStringLen:]
+    if stripStringLen == 1:
+        curString = curString.lstrip(stripString)
+    else:
+        while curString.startswith(stripString):
+            curString = curString[stripStringLen:]
 
     return curString
 
 
 def str_lchop_url(curString):
-    curString = str_lchop(curString, "http://")
     curString = str_lchop(curString, "https://")
-    curString = str_lchop(curString, "m.")
+    curString = str_lchop(curString, "http://")
     curString = str_lchop(curString, "mobile.")
     curString = str_lchop(curString, "www.")
+    curString = str_lchop(curString, "m.")
 
     return curString
 
@@ -599,28 +665,34 @@ def str_rchop(curString, stripString):
         rss_print.print_debug(__file__, "sisend tühi, katkestame: stripString = '" + str(stripString) + "'", 0)
         return curString
 
-    # constant
     stripStringLen = len(stripString)
 
-    while curString.endswith(stripString):
-        curStringLenWithoutStripString = len(curString) - stripStringLen
-        curString = curString[:curStringLenWithoutStripString]
+    if stripStringLen == 1:
+        curString = curString.rstrip(stripString)
+    else:
+        while curString.endswith(stripString):
+            curStringLenWithoutStripString = len(curString) - stripStringLen
+            curString = curString[:curStringLenWithoutStripString]
 
     return curString
 
 
 def str_remove_clickbait(curString):
-    curString = re.sub(r"^[A-ZŽŠÕÜÄÖ ]+[|:!?]+[ ]", "", curString)
+    curString = re.sub(r"^[0-9A-ZŽŠÕÜÄÖ!?\-– |,„]+[|:!?]+[ ]", "", curString)
 
     return curString
 
 
 def str_title_at_domain(articleTitle, domain):
-    curTitle = articleTitle.rstrip(".")
-    curTitle += " @"
-    curTitle += str_lchop_url(domain)
+    if not articleTitle:
+        rss_print.print_debug(__file__, "sisend tühi: articleTitle = " + articleTitle, 0)
+    else:
+        articleTitle = articleTitle.rstrip(".")
+        articleTitle += " "
+    articleTitle += "@"
+    articleTitle += str_lchop_url(domain)
 
-    return curTitle
+    return articleTitle
 
 
 def xpath_debug(pageTree, xpathString, cutFrom="right"):
@@ -638,12 +710,11 @@ def xpath_debug(pageTree, xpathString, cutFrom="right"):
             rss_print.print_debug(__file__, "'" + xpathString + "' stringile ei leitud vasteid", 3)
         else:
             rss_print.print_debug(__file__, "'" + xpathString + "' stringe leitud: " + str(len(elementStrings)), 0)
-            rss_print.print_debug(__file__, "'" + xpathString + "' elementStrings: " + str(elementStrings), 5)
 
         xpathStringSplitted = xpathString.split("/")
         if len(xpathStringSplitted) <= 3:
             rss_print.print_debug(__file__, "'" + xpathString + "' ei anna enam lühendada", 2)
-            rss_print.print_debug(__file__, "pageTree=" + parsers_html.html_to_string(pageTree)[:14000], 2)
+            rss_print.print_debug(__file__, "pageTree=" + parsers_html.html_to_string(pageTree)[:10000], 3)
             break
 
         if cutFrom == "left":
@@ -661,7 +732,7 @@ def xpath_debug(pageTree, xpathString, cutFrom="right"):
 
 
 def xpath_path_validator(xpathString, parent, multi):
-    if not xpathString.startswith("/html") and not xpathString.startswith("//"):
+    if not xpathString.startswith("/html") and not xpathString.startswith("//") and not xpathString.startswith("(//"):
         rss_print.print_debug(__file__, "xpath-i stringi algus mittekorrektne: " + xpathString, 0)
     if '""' in xpathString:
         rss_print.print_debug(__file__, "xpath-i stringis on vigane '\"\"', asendame '\"'-ga: " + xpathString, 0)
@@ -708,6 +779,15 @@ def xpath_path_validator(xpathString, parent, multi):
 
 
 def xpath_to(to, pageTree, xpathString, parent=False, count=False, multi=False):
+    """
+    Leiab etteantud artikli lehe puust etteantud xpathi väärtuse alusel objektid.
+    @to:
+    @pageTree:
+    @xpathString:
+    @parent:
+    @count:
+    @multi:
+    """
     # pageTree validation
     if pageTree is None:
         rss_print.print_debug(__file__, "'" + xpathString + "' pageTree puudub, katkestame", 0)
@@ -723,18 +803,17 @@ def xpath_to(to, pageTree, xpathString, parent=False, count=False, multi=False):
     elementStrings = pageTree.xpath(xpathString)
 
     elementsLen = len(elementStrings)
-
     if not elementsLen:
-        rss_stat.save_path(count, xpathString, found=False)
-        rss_print.print_debug(__file__, "'" + xpathString + "' leide: " + str(elementsLen), 1)
+        rss_stat.save_string_stat(rss_config.PATH_FILENAME_STAT, count, xpathString, found=False)
+        rss_print.print_debug(__file__, "'" + xpathString + "' leide: " + str(elementsLen), 2)
         # debugime pathi?
         if rss_config.PRINT_MESSAGE_LEVEL >= 2:
             xpath_debug(pageTree, xpathString, "right")
     elif elementsLen == 1:
-        rss_stat.save_path(count, xpathString, found=True)
+        rss_stat.save_string_stat(rss_config.PATH_FILENAME_STAT, count, xpathString, found=True)
         rss_print.print_debug(__file__, "'" + xpathString + "' leide: " + str(elementsLen), 3)
     elif elementsLen > 1:
-        rss_stat.save_path(count, xpathString, found=True)
+        rss_stat.save_string_stat(rss_config.PATH_FILENAME_STAT, count, xpathString, found=True)
         if to == 'single' and not multi:
             rss_print.print_debug(__file__, "'" + xpathString + "' oodati ühte, leide: " + str(elementsLen), 0)
             elementsLen = 1

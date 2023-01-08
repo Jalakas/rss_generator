@@ -36,7 +36,7 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText):
     # https://cyber.harvard.edu/rss/rss.html#ltttlgtSubelementOfLtchannelgt:
     # "Number of minutes that indicates how long a channel can be cached before refreshing from the source."
     ttl = etree.SubElement(channel, "ttl")
-    ttl.text = str(60)
+    ttl.text = str(12 * 60)
 
     urlsLen = len(dataset["urls"])
     urlsLenStr = str(urlsLen)
@@ -48,10 +48,10 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText):
             curValue = dataset["urls"][i]
             curValue = curValue.rstrip("/")
             if not curValue.startswith("http"):
-                rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") lingi algusest ei leitud 'http': " + curValue, 3)
+                rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") lingi algusest ei leitud 'http': " + curValue, 3)
                 curValue = parsers_common.str_domain_url(domainText, curValue)
             if "http://" in curValue and "https://" in domainText:
-                rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") lingist leiti 'http://': " + curValue, 1)
+                rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") lingist leiti 'http://': " + curValue, 1)
                 curValue = curValue.replace("http://", "https://")
             itemLink.text = curValue
 
@@ -60,7 +60,7 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText):
             curValueWithoutHttp = parsers_common.str_lchop_url(curValue)
             itemGuid.text = curValueWithoutHttp.encode('ascii', 'xmlcharrefreplace')
         else:
-            rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") puudub vajalik url, katkestame", 0)
+            rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") puudub vajalik url, katkestame", 0)
             continue
 
         if parsers_common.get(dataset["titles"], i, printWarning=0):
@@ -70,17 +70,18 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText):
             curValue = parsers_common.str_cleanup_title(curValue)
             itemTitle.text = curValue.encode('ascii', 'xmlcharrefreplace')
         else:
-            rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") aadressil puudub vajalik pealkiri: " + str(itemLink.text), 0)
+            rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") aadressil puudub vajalik pealkiri: " + str(itemLink.text), 0)
             itemTitle = etree.SubElement(item, "title")
             itemTitle.text = title.text + " " + itemGuid.text
 
         if parsers_common.get(dataset["descriptions"], i, printWarning=0):
             itemDescription = etree.SubElement(item, "description")
             curValue = dataset["descriptions"][i]
+            curValue = parsers_common.str_cleanup_post(curValue)
             curValue = parsers_common.str_cleanup_description(curValue)
             itemDescription.text = curValue.encode('ascii', 'xmlcharrefreplace')
         else:
-            rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") pealkirjal puudub vajalik kirjeldus: '" + str(itemTitle.text) + "' - " + str(itemLink.text), 0)
+            rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") pealkirjal puudub vajalik kirjeldus: '" + str(itemTitle.text) + "' - " + str(itemLink.text), 0)
             itemDescription = etree.SubElement(item, "description")
             itemDescription.text = itemTitle.text
 
@@ -89,17 +90,17 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText):
             curValue = dataset["pubDates"][i]
             curTimeFloat = parsers_datetime.time_float()
             postTimeFloat = parsers_datetime.raw_to_float(curValue, curTimeFormat)
-            postTimeFloatLimit = (curTimeFloat - 31 * 24 * 60 * 60)
+            postTimeFloatLimit = curTimeFloat - (31 * 24 * 60 * 60)
 
             if postTimeFloat < 1:
-                rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") '" + itemTitle.text + "' aeg: '" + curValue + "' on eelajalooline!, asendame hetkeajaga", 0)
+                rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") '" + itemTitle.text + "' aeg: '" + curValue + "' on eelajalooline!, asendame hetkeajaga", 0)
                 curValue = parsers_datetime.float_to_datetime_rfc2822(curTimeFloat)
                 itemPubdate.text = curValue
             elif (rss_config.UPLOAD_TIME_LIMIT is True and postTimeFloat < postTimeFloatLimit):
-                rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") '" + itemTitle.text + "' aeg: '" + curValue + "' on vanem kui 31 päeva, eemaldame kande", 2)
+                rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") '" + itemTitle.text + "' aeg: '" + curValue + "' on vanem kui 31 päeva, eemaldame kande", 2)
                 channel.remove(item)
             elif postTimeFloat > curTimeFloat:
-                rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") '" + itemTitle.text + "' aeg: '" + curValue + "' on tulevikust?", 0)
+                rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") '" + itemTitle.text + "' aeg: '" + curValue + "' on tulevikust?", 1)
                 itemPubdate.text = curValue
             else:
                 itemPubdate.text = curValue
@@ -114,30 +115,28 @@ def rssmaker(dataset, titleText, domainText, linkText, descriptionText):
             curValue = curValue.strip()
 
             if curValue.find("url(") > 0:
-                rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") korrastame parsimata meedialingi:': " + curValue, 1)
+                rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") korrastame parsimata meedialingi:': " + curValue, 1)
                 curValue = curValue.split("url('")[-1].strip("');")
                 encType = "image/jpeg"
 
             if curValue.startswith("//"):
-                rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") lisame meedialingi algusesse 'http:': " + curValue, 2)
+                rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") lisame meedialingi algusesse 'http:': " + curValue, 2)
                 curValue = "http:" + curValue
 
             curValue = curValue.replace("https", "http")
 
             if len(curValue) < len(domainText + "1.jpg"):
-                rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") ei lisa RSS-i meedialinki, kuna see on liiga lühike: '" + curValue + "'", 0)
+                rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") ei lisa RSS-i meedialinki, kuna see on liiga lühike: '" + curValue + "'", 0)
             else:
                 if not curValue.startswith("http"):
-                    rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") meedialingi algusest ei leitud 'http'-d: '" + curValue + "'", 1)
+                    rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") meedialingi algusest ei leitud 'http'-d: '" + curValue + "'", 1)
                     curValue = parsers_common.str_domain_url(domainText, curValue)
 
                 if curValue.rfind('http') > 0:
-                    rss_print.print_debug(__file__, "kande(" + str(i) + "/" + urlsLenStr + ") meedialingi keskelt leiti 'http': '" + curValue + "'", 0)
+                    rss_print.print_debug(__file__, "kande(" + str(i + 1) + "/" + urlsLenStr + ") meedialingi keskelt leiti 'http': '" + curValue + "'", 0)
 
                 if not encType:
-                    if ".jpg" in curValue:
-                        encType = "image/jpeg"
-                    elif ".jpeg" in curValue:
+                    if (".jpg" in curValue) or (".jpeg" in curValue):
                         encType = "image/jpeg"
                     elif ".png" in curValue:
                         encType = "image/png"

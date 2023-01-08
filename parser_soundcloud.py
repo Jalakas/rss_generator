@@ -5,10 +5,10 @@ import parsers_datetime
 
 def fill_article_dict(articleDataDict, pageTree, domain):
 
-    articleDataDict["authors"] =  parsers_common.xpath_to("list", pageTree, '//section/article/h2/a[2]/text()')
+    articleDataDict["authors"] = parsers_common.xpath_to("list", pageTree, '//section/article/h2/a[2]/text()')
     articleDataDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//section/article/time/text()')
-    articleDataDict["titles"] =   parsers_common.xpath_to("list", pageTree, '//section/article/h2/a[@itemprop="url"]/text()')
-    articleDataDict["urls"] =     parsers_common.xpath_to("list", pageTree, '//section/article/h2/a[@itemprop="url"]/@href')
+    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//section/article/h2/a[@itemprop="url"]/text()')
+    articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//section/article/h2/a[@itemprop="url"]/@href')
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # pubDates magic from "2021-01-06T10:11:04Z" to datetime()
