@@ -20,6 +20,7 @@ REQUEST_ARTICLE_POSTS_MAX = 500
 REQUEST_TIMEOUT = 10  # sek
 SELENIUM_DRIVER = ""
 SELENIUM_DRIVER_PROFILE = ""
+SELENIUM_POLICY = 'auto'  # options = 'all', 'auto', 'off'
 UPLOAD_DOMAIN = 'http://domain.ee'
 UPLOAD_NAME = 'rss_file'
 UPLOAD_TIME_LIMIT = True  # Feedly does not support articles older than 30 days

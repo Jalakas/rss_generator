@@ -9,12 +9,12 @@ def fill_article_dict(articleDataDict, pageTree, domain):
     articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//a[@class="session__link"]/@href')
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
-
-        curArtPubImage = parsers_common.get(articleDataDict["images"], i)
-        if " " in curArtPubImage:
-            curArtPubImages = curArtPubImage.split(" ")
-            curArtPubImage = curArtPubImages[-2]
-            articleDataDict["images"] = parsers_common.list_add_or_assign(articleDataDict["images"], i, curArtPubImage)
+        # images
+        curArtImage = parsers_common.get(articleDataDict["images"], i)
+        if " " in curArtImage:
+            curArtImages = curArtImage.split(" ")
+            curArtImage = curArtImages[-2]
+        articleDataDict["images"] = parsers_common.list_add_or_assign(articleDataDict["images"], i, curArtImage)
 
         if parsers_common.should_get_article_body(i):
             curArtUrl = parsers_common.get(articleDataDict["urls"], i)

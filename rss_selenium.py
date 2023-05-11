@@ -91,27 +91,28 @@ def get_article_string(articleUrl, clicks, searchXpath, profile):
         # rss_print.print_debug(__file__, "liigume lehe lõppu: ebaõnnestus", 0)
         # rss_print.print_debug(__file__, "exception = '" + str(e).replace("\n", "") + "'", 0)
 
-    try:
-        for click in clicks:
-            sleep(0.1)  # 100 ms
-            rss_print.print_debug(__file__, "teeme kliki: " + click, 1)
+    for click in clicks:
+        sleep(0.1)  # 100 ms
+        rss_print.print_debug(__file__, "teeme kliki: " + click, 1)
+        try:
             driver.find_element(By.XPATH, click).click()
-    except Exception as e:
-        rss_print.print_debug(__file__, "teeme kliki: ebaõnnestus", 0)
-        rss_print.print_debug(__file__, "exception = '" + str(e).replace("\n", "") + "'", 0)
+        except Exception as e:
+            rss_print.print_debug(__file__, "ebaõnnestus teeme kliki: " + click, 0)
+            rss_print.print_debug(__file__, "exception = '" + str(e).replace("\n", "") + "'", 0)
 
     if not searchXpath:
-        rss_print.print_debug(__file__, "ootamise element on määramata: " + articleUrl, 1)
+        rss_print.print_debug(__file__, "ootamise element on määramata, ootame sekundi: " + articleUrl, 1)
+        sleep(1)  # 1000 ms
     else:
         rss_print.print_debug(__file__, "ootame elementi: " + searchXpath, 1)
         try:
             WebDriverWait(driver, rss_config.REQUEST_TIMEOUT).until(expected_conditions.visibility_of_element_located((By.XPATH, searchXpath)))
         except Exception as e:
-            rss_print.print_debug(__file__, "ootame elementi: ebaõnnestus", 0)
+            rss_print.print_debug(__file__, "ebaõnnestus ootame elementi: " + searchXpath, 0)
             rss_print.print_debug(__file__, "exception = '" + str(e).replace("\n", "") + "'", 0)
         rss_print.print_debug(__file__, "ootasime ära elemendi: " + searchXpath, 1)
 
-    rss_print.print_debug(__file__, "võtame lehelt 'page_source': " + articleUrl, 1)
+    rss_print.print_debug(__file__, "võtame 'page_source' lehelt: " + articleUrl, 1)
     try:
         htmlPageString = driver.page_source
     except Exception as e:

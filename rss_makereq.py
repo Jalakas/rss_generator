@@ -16,28 +16,31 @@ def get_url_from_internet(curDomainLong, stamp, seleniumPath="", seleniumProfile
 
     seleniumClicks = ()
 
-    # selenium
-    if "auto24.ee" in curDomainLong:
+    # selenium configuraton
+    # Ei lae ilma Javascriptita üldse lehte
+    if "arhiiv.err.ee" in curDomainLong:
+        seleniumPath = '//app-grid[@class="ng-star-inserted"]'
+    # Ei lae ilma Javascriptita foorumit
+    elif "auto24.ee/foorum" in curDomainLong:
         seleniumPath = '//div[@class="section messages"]'
-    elif "arhiiv.err.ee" in curDomainLong:
-        seleniumPath = '//app-card'
+    # Ei lae ilma Javascriptita uudiseid
     elif "err.ee/uudised" in curDomainLong:
         seleniumPath = '//div[@class="ng-scope"]'
-    elif "kultuuriaken.tartu.ee/et/syndmused" in curDomainLong:
-        seleniumClicks = (
-            '//input[@name="starting_time" and @value="2"]',
-            '//a[@data-view="list-view"]',
-            )
-        seleniumPath = '/html/body/div[2]/section/div/div[3]/div[2]/div[4]/div[2]/div/div/div[2]'
-    elif "mixcloud.com" in curDomainLong:
-        seleniumPath = '//main/div[@class="content"]/div/div/div'
-    elif "osta.ee" in curDomainLong:
+    # "Võimalik tõrge teie veebilehitsejas"
+    elif "osta.ee/kategooria" in curDomainLong:
         seleniumPath = '//article/ul/li/figure'
+    # Ei lae ilma Javascriptita uudiseid
+    elif "keskeesti.treraadio.ee/uudised" in curDomainLong:
+        seleniumPath = '/html'
 
     # teeme päringu
-    if seleniumPath or seleniumClicks or "treraadio.ee" in curDomainLong or "twitter.com" in curDomainLong:
+    if rss_config.SELENIUM_POLICY == 'all':
         htmlPageString = rss_selenium.get_article_string(curDomainLong, seleniumClicks, seleniumPath, seleniumProfile)
-    else:
+    elif rss_config.SELENIUM_POLICY == 'auto' and (seleniumPath or seleniumClicks  ):
+        htmlPageString = rss_selenium.get_article_string(curDomainLong, seleniumClicks, seleniumPath, seleniumProfile)
+    elif rss_config.SELENIUM_POLICY == 'auto':
+        htmlPageString = rss_requests.get_article_string(curDomainLong, rss_config.HEADERS)
+    elif rss_config.SELENIUM_POLICY == 'off':
         htmlPageString = rss_requests.get_article_string(curDomainLong, rss_config.HEADERS)
 
     # puhastame lehe üleliigsest jamast

@@ -8,7 +8,7 @@ def fill_article_dict(articleDataDict, pageTree, domain):
 
     articleDataDict["authors"] = parsers_common.xpath_to("list", pageTree, '//div[@class="structured-content__block structured-content__block--column"]/article/meta[@itemprop="author"]/@content')
     articleDataDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//div[@class="structured-content__block structured-content__block--column"]/article/a/meta[@itemprop="datePublished"]/@content')
-    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//div[@class="structured-content__block structured-content__block--column"]/article/a/div[@class="list-article__text"]/div[@class="list-article__text-content"]/div[@class="list-article__headline"]/text()')
+    articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//div[@class="structured-content__block structured-content__block--column"]/article/a/div[@class="list-article__text"]/div[@class="list-article__text-content"]/h2/text()')
     articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//div[@class="structured-content__block structured-content__block--column"]/article/a/@href')
 
     # remove unwanted content: titles
@@ -37,6 +37,9 @@ def fill_article_dict(articleDataDict, pageTree, domain):
                 curArtDesc2 = parsers_common.xpath_to("single", pageTree, '//div[@class="article-body__item article-body__item--htmlElement"]', parent=True, count=True, multi=True)
             if not curArtDesc2:
                 curArtDesc2 = parsers_common.xpath_to("single", pageTree, '//div[@class="article-body__item article-body__item--highlightedContent"]', parent=True, count=True, multi=True)
+            if not curArtDesc2:
+                curArtDesc2 = parsers_common.xpath_to("single", pageTree, '(//span[@class="figure__caption--title"])[1]', parent=True, count=True)
+
 
             # description4 - hall väljajuhatus, vms
             curArtDesc3 = ""
@@ -48,8 +51,6 @@ def fill_article_dict(articleDataDict, pageTree, domain):
                 curArtDesc3 = parsers_common.xpath_to("single", pageTree, '(//div[@class="article-body__item article-body__item--video"])[1]', parent=True, count=True)
             if not curArtDesc3:
                 curArtDesc3 = parsers_common.xpath_to("single", pageTree, '//div[@class="article-body__item article-body__item--gallery"]', parent=True, count=True, multi=True)
-            if not curArtDesc3:
-                curArtDesc3 = parsers_common.xpath_to("single", pageTree, '(//span[@class="figure__caption--title"])[1]', parent=True, count=True)
 
             curArtDesc = curArtDesc1 + ' ' + curArtDesc2 + ' ' + curArtDesc3
             curArtDesc = curArtDesc.replace('<a href="https://minumeedia.postimees.ee/kampaania/" target="_blank" class="my-media-link">digipaketi</a>', '')
@@ -83,6 +84,8 @@ def fill_article_dict(articleDataDict, pageTree, domain):
                 rss_print.print_debug(__file__, "ei kontrolli plokke, kuna: pildid", 2)
             elif "pilt-" in curArtUrl:
                 rss_print.print_debug(__file__, "ei kontrolli plokke, kuna: pilt", 2)
+            elif "sundmused" in curArtUrl:
+                rss_print.print_debug(__file__, "ei kontrolli plokke, kuna: sundmused", 2)
             else:
                 if not curArtDesc1:
                     rss_print.print_debug(__file__, "tühi 1. plokk: (bold sissejuhatus) - " + curArtUrl, 0)

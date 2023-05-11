@@ -11,12 +11,6 @@ def fill_article_dict(articleDataDict, pageTree, domain):
     articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="title"]/a[3]/text()')
     articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//div[@class="message"]/div[@class="title"]/a[3]/@href')
 
-    # remove unwanted content: titles
-    dictFilters = (
-        "Kaebused",
-    )
-    articleDataDict = parsers_common.article_data_dict_clean(__file__, articleDataDict, dictFilters, "in", "titles")
-
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # description
         curArtDesc = parsers_common.get(articleDataDict["descriptions"], i)

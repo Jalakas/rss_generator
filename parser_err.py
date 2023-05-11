@@ -38,7 +38,6 @@ def fill_article_dict(articleDataDict, pageTree, domain):
         "Oma tõde:",
         "Ongi Koik",
         "Osoon:",
-        "Pea ees vette. Tai Kuningriigis:",
         "Pealtnägija:",
         "Peegel:",
         "Plekktrumm",
@@ -82,7 +81,6 @@ def fill_article_dict(articleDataDict, pageTree, domain):
         "MINITURNIIR.",
         "MNEMOTURNIIR",
         "MULGIKEELSED UUDISED",
-        "MUST KLAHV, VALGE KLAHV.",
         "NAISTESAUN.",
         "OLUKORRAST RIIGIS",
         "PÄEVAKAJA",
@@ -101,13 +99,12 @@ def fill_article_dict(articleDataDict, pageTree, domain):
 
     # remove unwanted content: descriptions
     dictFilters = (
-        "vene keele",
         "venekeel",
     )
     articleDataDict = parsers_common.article_data_dict_clean(__file__, articleDataDict, dictFilters, "in", "descriptions")
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
-
+        # image
         curArtPubImage = parsers_common.get(articleDataDict["images"], i, printWarning=0)
         if "url=" in curArtPubImage:
             curArtPubImages = curArtPubImage.split("url=")

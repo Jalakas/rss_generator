@@ -7,43 +7,33 @@ import rss_print
 
 def fill_article_dict(articleDataDict, pageTree, domain):
 
-    maxArticleBodies = min(rss_config.REQUEST_ARTICLE_BODIES_MAX, 4)
+    maxArticleBodies = min(rss_config.REQUEST_ARTICLE_BODIES_MAX, 3)
     maxArticlePosts = round(rss_config.REQUEST_ARTICLE_POSTS_MAX / maxArticleBodies)  # set 0 for all posts
 
     parentPages = {}
-    parentPages["stamps"] = parsers_common.xpath_to("list", pageTree, '//div[@class="reply-count"]/span[@data-xf-init="tooltip"]/@title')
-    parentPages["titles"] = parsers_common.xpath_to("list", pageTree, '//a[@qid="thread-item-title"]/text()')
-    parentPages["urls"] = parsers_common.xpath_to("list", pageTree, '//a[@qid="thread-item-title"]/@href')
-
-    # remove unwanted content: titles
-    dictFilters = (
-        "$",
-        "*:::::::the official what did you do to you mkiv today thread::::::::*",
-        "??",
-        "Ask a Simple Question",
-        "Check Your Fans",
-        "MK4Forum",
-        "QUICK LINKS",
-        "TERE TULEMAST SSC EESTI FOORUMISSE!",
-    )
-    parentPages = parsers_common.article_data_dict_clean(__file__, parentPages, dictFilters, "in", "titles")
+    # version: phpBB2 Plus based on phpBB
+    parentPages["stamps"] = parsers_common.xpath_to("list", pageTree, '//td[@align="right"]/span[@class="gensmall"]/a[1]/@href')
+    parentPages["titles"] = parsers_common.xpath_to("list", pageTree, '//a[@class="topictitle"]/text()')
+    parentPages["urls"] = parsers_common.xpath_to("list", pageTree, '//a[@class="topictitle"]/@href')
 
     # teemade läbivaatamine
     for i in parsers_common.article_urls_range(parentPages["urls"]):
         # teemalehe sisu hankimine
         if parsers_common.should_get_article_body(i, maxArticleBodies):
             curParentUrl = parsers_common.get(parentPages["urls"], i)
-            curParentUrl = curParentUrl + "page-10000"
+            curParentUrl = parsers_common.str_domain_url(domain, curParentUrl)
+
             parentPagesStamp = parsers_common.get(parentPages["stamps"], i)
+            parentPagesStamp = curParentUrl.split("#")[-1]
 
             # load article into tree
             pageTree = parsers_common.get_article_tree(domain, curParentUrl, cache='cacheStamped', pageStamp=parentPagesStamp)
 
             articlePostsDict = {}
-            articlePostsDict["authors"] = parsers_common.xpath_to("list", pageTree, '//h4[@class="MessageCard__user-info__name"]/a/text()')
-            articlePostsDict["descriptions"] = parsers_common.xpath_to("list", pageTree, '//div[@class!="signature-content-wrapper"]/div[@class="bbWrapper"]', parent=True)
-            articlePostsDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//time/@datetime')
-            articlePostsDict["urls"] = parsers_common.xpath_to("list", pageTree, '//a[@class="MessageCard__post-position"]/@href')
+            articlePostsDict["authors"] = parsers_common.xpath_to("list", pageTree, '//table//tr/td/span/strong/a/text()')
+            articlePostsDict["descriptions"] = parsers_common.xpath_to("list", pageTree, '//table//tr/td[@class="postbody"]', parent=True)
+            articlePostsDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//td[@class="postdetails"]', parent=True)
+            articlePostsDict["urls"] = parsers_common.xpath_to("list", pageTree, '//td[@class="postdetails"]/a/@href')
 
             # teema postituste läbivaatamine
             for j in parsers_common.article_posts_range(articlePostsDict["urls"], maxArticlePosts):
@@ -53,11 +43,21 @@ def fill_article_dict(articleDataDict, pageTree, domain):
 
                 # description
                 curArtDesc = parsers_common.get(articlePostsDict["descriptions"], j)
+                curArtDesc = curArtDesc.replace('</div><div class="quotecontent">', '<br>')
+                curArtDesc = parsers_common.fix_quatation_tags(curArtDesc, '<div class="quotetitle">', "</div>", "<blockquote>", "</blockquote>")
                 articleDataDict["descriptions"] = parsers_common.list_add(articleDataDict["descriptions"], j, curArtDesc)
 
                 # pubDates
                 curArtPubDate = parsers_common.get(articlePostsDict["pubDates"], j)
-                curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%Y-%m-%dT%H:%M:%S%z")  # 2021-01-28T16:15:42-0500
+                curArtPubDate = curArtPubDate.lower()
+                curArtPubDate = curArtPubDate.split('<span>postituse')[0]
+                curArtPubDate = curArtPubDate.split("postitatud: ")[1]
+                curArtPubDate = curArtPubDate.replace("<strong>", "")
+                curArtPubDate = curArtPubDate.replace("</strong>", "")
+                curArtPubDate = curArtPubDate.replace(" kell ", ", ")
+                curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, "eile", "%d %m %Y", offsetDays=-1)
+                curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, "täna", "%d %m %Y", offsetDays=0)
+                curArtPubDate = parsers_datetime.guess_datetime(curArtPubDate)
                 articleDataDict["pubDates"] = parsers_common.list_add(articleDataDict["pubDates"], j, curArtPubDate)
 
                 # title
@@ -67,6 +67,7 @@ def fill_article_dict(articleDataDict, pageTree, domain):
 
                 # url
                 curArtUrl = parsers_common.get(articlePostsDict["urls"], j)
+                curArtUrl = parsers_common.str_domain_url(domain, curArtUrl)
                 articleDataDict["urls"] = parsers_common.list_add(articleDataDict["urls"], j, curArtUrl)
 
                 rss_print.print_debug(__file__, "teema " + str(i + 1) + " postitus nr. " + str(j + 1) + "/(" + str(len(articlePostsDict["urls"])) + ") on " + articlePostsDict["urls"][j], 2)

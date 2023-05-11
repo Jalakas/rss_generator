@@ -10,6 +10,12 @@ def fill_article_dict(articleDataDict, pageTree, domain):
     articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//div[@class="col-sm-6"]/div[@class="post-item"]/a/@href')
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
+        # images
+        curArtImage = parsers_common.get(articleDataDict["images"], i)
+        curArtImage = parsers_common.split_failsafe(curArtImage, "?", 0)
+        curArtImage = curArtImage.replace("http://", "https://")
+        articleDataDict["images"] = parsers_common.list_add_or_assign(articleDataDict["images"], i, curArtImage)
+
         # titles
         curArtTitle = parsers_common.get(articleDataDict["titles"], i)
         curArtTitle = parsers_common.str_remove_clickbait(curArtTitle)
@@ -22,13 +28,11 @@ def fill_article_dict(articleDataDict, pageTree, domain):
             pageTree = parsers_common.get_article_tree(domain, curArtUrl, cache='cacheAll')
 
             # descriptions
-            curArtDesc1 = parsers_common.xpath_to("single", pageTree, '//div[@class="lead"]', parent=True)
+            curArtDesc = parsers_common.xpath_to("single", pageTree, '//div[@class="lead"]', parent=True)
+            if not curArtDesc:
+                curArtDesc = parsers_common.xpath_to("single", pageTree, '//div[@class="col-sm-9"]/p', multi=True)
             curArtDesc2 = parsers_common.xpath_to("single", pageTree, '//div[@class="text flex-row"]/p', multi=True)
-
-            if not curArtDesc1:
-                curArtDesc1 = parsers_common.xpath_to("single", pageTree, '//div[@class="col-sm-9"]/p', multi=True)
-
-            curArtDesc = curArtDesc1 + '<br>' + curArtDesc2
+            curArtDesc = curArtDesc + '<br>' + curArtDesc2
             articleDataDict["descriptions"] = parsers_common.list_add_or_assign(articleDataDict["descriptions"], i, curArtDesc)
 
             # timeformat magic from "Avaldatud: 14 detsember, 2017" to datetime()

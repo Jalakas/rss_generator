@@ -23,6 +23,12 @@ def user_inputs(sysArgv, rssDefinitions):
         elif curSisend == "-cache":
             rss_config.CACHE_POLICY_ARTICLE = 'all'
             rss_print.print_debug(__file__, "sisend: '" + curSisend + "'", 0)
+        elif curSisend == "-noselenium":
+            rss_config.SELENIUM_POLICY = 'off'
+            rss_print.print_debug(__file__, "sisend: '" + curSisend + "'", 0)
+        elif curSisend == "-selenium":
+            rss_config.SELENIUM_POLICY = 'all'
+            rss_print.print_debug(__file__, "sisend: '" + curSisend + "'", 0)
         elif curSisend == "-v":
             rss_config.PRINT_MESSAGE_LEVEL = max(rss_config.PRINT_MESSAGE_LEVEL, 1)
             rss_print.print_debug(__file__, "sisend: '" + curSisend + "'", 0)

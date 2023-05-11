@@ -55,78 +55,98 @@ def guess_datetime(curArtPubDate):
     """
     Süntaksi seletus: https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior.
     """
-    curArtPubDate = curArtPubDate.strip("», ")
+    curArtPubDate = curArtPubDate.strip('», ="')
     curArtPubDate = curArtPubDate.lower()
 
+    rss_print.print_debug(__file__, "sisend: '" + curArtPubDate + "', len(" + str(len(curArtPubDate)) + ")", 3)
+
     # NB väiketähed, järjekord on oluline
-    if len(curArtPubDate) > 10:
+    if len(curArtPubDate) > 19:
         if curArtPubDate.find("t") == 10:
-            curArtPubDate = raw_to_datetime(curArtPubDate, "%Y-%m-%dt%H:%M:%S%z")
-        elif curArtPubDate.find("am") > -1 or curArtPubDate.find("pm") > -1:
-            if curArtPubDate.find("-") > -1:
-                # "14-04-2020, 00:05 am" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%d-%m-%Y, %H:%M %p")
-            elif curArtPubDate.find(".") > -1:
-                # "23.10.2022 23:59 pm" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "d.%m.%Y %H:%M %p")
-            elif curArtPubDate.find(", ") > -1 and curArtPubDate[2] == ' ':
-                # "06 26, 2019 8:07 pm" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%m %d, %Y %I:%M %p")
-            elif curArtPubDate.find(", ") > -1:
-                # "23.10.2022, 18:10 pm" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "d.%m.%Y, %H:%M %p")
+            # "2023-03-12t10:58:07 +0300"
+            curDatetime = raw_to_datetime(curArtPubDate, "%Y-%m-%dt%H:%M:%S%z")
+        elif curArtPubDate.find(", ") > -1 and curArtPubDate[2] == ' ':
+            # "06 26, 2019 08:07 pm"
+            curDatetime = raw_to_datetime(curArtPubDate, "%m %d, %Y %I:%M %p")
+        elif curArtPubDate.find(", ") > -1 and curArtPubDate.find("-") > -1:
+            # "14-04-2020, 00:05 am"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d-%m-%Y, %H:%M %p")
+        elif curArtPubDate.find(",") > -1:
+            # "26. 06 2019, 18:07:05"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d. %m %Y, %H:%M:%S")
+        else:
+            # "26.06.2019 18:07:05"
+            curArtPubDate = curArtPubDate[0:19]
+            curDatetime = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M:%S")
+    elif len(curArtPubDate) == 19:
+        if curArtPubDate.find("t") == 10:
+            # "2023-03-12t10:58:07"
+            curDatetime = raw_to_datetime(curArtPubDate, "%Y-%m-%dt%H:%M:%S")
+        elif (curArtPubDate.find("am") > -1 or curArtPubDate.find("pm") > -1) and curArtPubDate.find(".") > -1:
+            # "23.10.2022 23:59 pm"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M %p")
+        elif (curArtPubDate.find("am") > -1 or curArtPubDate.find("pm") > -1) and curArtPubDate.find(", ") == 5:
+            # "04 21, 2023 7:31 pm"
+            curDatetime = raw_to_datetime(curArtPubDate, "%m %d, %Y %H:%M %p")
+        elif (curArtPubDate.find("am") > -1 or curArtPubDate.find("pm") > -1) and curArtPubDate.find(", ") == 10:
+            # "23.10.2022, 18:10 pm"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d.%m.%Y, %H:%M %p")
+        else:
+            # "26.06.2019 18:07:05"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M:%S")
+    elif len(curArtPubDate) == 18:
+        if curArtPubDate.find(". ") > -1 and curArtPubDate.find(", ") > -1:
+            # "06. 10 2010, 20:25""
+            curDatetime = raw_to_datetime(curArtPubDate, "%d. %m %Y, %H:%M")
+    elif len(curArtPubDate) == 17:
+        if curArtPubDate.find(".") == 2:
+            # "21.10.2022, 10:27"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d.%m.%Y, %H:%M")
+        elif curArtPubDate.find(", ") == 5:
+            # "13:08, 18 09 2022"
+            curDatetime = raw_to_datetime(curArtPubDate, "%H:%M, %d %m %Y")
+        elif curArtPubDate.find(", ") == 10 and curArtPubDate.find("-") == 2:
+            # "21-11-2016, 04:11"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d-%m-%Y, %H:%M")
+        elif curArtPubDate.find(", ") == 10 and curArtPubDate.find(" ") == 2:
+            # "30 12 2022, 01:42"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d %m %Y, %H:%M")
+    elif len(curArtPubDate) == 16:
+        if curArtPubDate.find(".") > -1:
+            # "16.10.2019 20:53"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M")
+        else:
+            # "16 10 2019 20:53"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d %m %Y %H:%M")
+    elif len(curArtPubDate) == 15:
+        if curArtPubDate.find(".") > -1:
+            # "4.04.2023 13:55"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M")
         elif curArtPubDate.find("-") > -1:
-            if curArtPubDate.find(", ") == 10:
-                # "21-11-2016, 04:11" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%d-%m-%Y, %H:%M")
-            elif curArtPubDate.find(", ") > -1:
-                # "21-11-16, 04:11" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%d-%m-%y, %H:%M")
-            else:
-                # "21-11-16,04:11" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%d-%m-%y,%H:%M")
-        elif curArtPubDate.find(". ") > -1:
-            if curArtPubDate.find(", ") > -1:
-                # "26. 06 2019, 18:07:05" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%d. %m %Y, %H:%M:%S")
-            else:
-                # "01. 03 2021 14:34" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%d. %m %Y %H:%M")
-        elif curArtPubDate.find(":") > -1:
-            if curArtPubDate.find("t,") > -1 and curArtPubDate.find(":") > curArtPubDate.find(","):
-                # "09 02 t, 2021 14:39" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%d %m t, %Y %H:%M")
-            elif curArtPubDate.find(",") > -1 and curArtPubDate.find(":") > curArtPubDate.find(","):
-                if curArtPubDate.find(",") >= 10:
-                    # "16 10 2019, 20:53" to datetime()
-                    curArtPubDate = raw_to_datetime(curArtPubDate, "%d %m %Y, %H:%M")
-                else:
-                    # "03 03, 2019 16:26" to datetime()
-                    curArtPubDate = raw_to_datetime(curArtPubDate, "%d %m, %Y %H:%M")
-            elif curArtPubDate.find(",") > curArtPubDate.find(":"):
-                # "15:36, 09 05 2020" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%H:%M, %d %m %Y")
-            elif curArtPubDate.find(".") > -1:
-                # "09.10.2019 18:43" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M")
-            else:
-                # "09 10 2019 18:43" to datetime()
-                curArtPubDate = raw_to_datetime(curArtPubDate, "%d %m %Y %H:%M")
+            # "23-04-23, 18:18""
+            curDatetime = raw_to_datetime(curArtPubDate, "%d-%m-%y, %H:%M")
     elif len(curArtPubDate) == 10:
-        # "09.10.2019" to datetime()
-        curArtPubDate = raw_to_datetime(curArtPubDate, "%d.%m.%Y")
+        if curArtPubDate.find("-") > -1:
+            # "22-04-2023"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d-%m-%Y")
+        else:
+            # "09.10.2019"
+            curDatetime = raw_to_datetime(curArtPubDate, "%d.%m.%Y")
     elif len(curArtPubDate) == 8:
-        # "09:10 pm" to datetime()
+        # "09:10 pm"
         rss_print.print_debug(__file__, "lisame puuduva kuupäeva", 2)
         curArtPubDate = add_missing_date_to_string(curArtPubDate, "23.10.2022 13:35 pm", "%d.%m.%Y ")
-        curArtPubDate = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M %p")
+        curDatetime = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M %p")
     elif len(curArtPubDate) == 5:
-        # "09:10" to datetime()
+        # "09:10"
         rss_print.print_debug(__file__, "lisame puuduva kuupäeva", 2)
         curArtPubDate = add_missing_date_to_string(curArtPubDate, "23.10.2022 13:35", " %d.%m.%Y ")
-        curArtPubDate = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M")
+        curDatetime = raw_to_datetime(curArtPubDate, "%d.%m.%Y %H:%M")
+    else:
+        rss_print.print_debug(__file__, "ei leidnud reeglit sisendile: '" + curArtPubDate + "'", 0)
+        curDatetime = 0
 
-    return curArtPubDate
+    return curDatetime
 
 
 def increasing_datetime_rfc2822(firstDatetimeRfc2822, secondDatetimeRfc2822):
@@ -169,9 +189,13 @@ def raw_to_datetime(rawDateTimeText, rawDateTimeSyntax):
 
     if not curDateTimeText:
         rss_print.print_debug(__file__, "tühi ajasisend: curDateTimeText = '" + curDateTimeText + "'", 0)
+    else:
+        rss_print.print_debug(__file__, "mittetühi ajasisend: curDateTimeText = '" + curDateTimeText + "'", 4)
 
     if not rawDateTimeSyntax:
         rss_print.print_debug(__file__, "tühi ajasisend: rawDateTimeSyntax = '" + rawDateTimeSyntax + "'", 0)
+    else:
+        rss_print.print_debug(__file__, "mittetühi ajasisend: rawDateTimeSyntax = '" + rawDateTimeSyntax + "'", 4)
 
     datetimeFloat = raw_to_float(curDateTimeText, rawDateTimeSyntax)
     datetimeRFC2822 = float_to_datetime_rfc2822(datetimeFloat)
@@ -184,20 +208,20 @@ def raw_to_datetime_guess_missing(inpArtPubDate, lastArtPubDate, dateStringPrefi
     curArtPubDate = inpArtPubDate
 
     curArtPubDate = add_value_to_time_string(curArtPubDate, dateStringPrefix, curOffsetDays)
-    curArtPubDate = raw_to_datetime(curArtPubDate, dateStringPrefix + dateStringMain)
+    curDatetime = raw_to_datetime(curArtPubDate, dateStringPrefix + dateStringMain)
     if lastArtPubDate and not increasing_datetime_rfc2822(curArtPubDate, lastArtPubDate):
         rss_print.print_debug(__file__, "uudise päev: täna " + str(curArtPubDate) + " ja eile " + str(lastArtPubDate), 3)
         rss_print.print_debug(__file__, "esineb ajahüpe, peame muutma tambovi lisamise offsetti", 3)
         curOffsetDays += daysToOffset
         curArtPubDate = inpArtPubDate
         curArtPubDate = add_value_to_time_string(curArtPubDate, dateStringPrefix, curOffsetDays)
-        curArtPubDate = raw_to_datetime(curArtPubDate, dateStringPrefix + dateStringMain)
+        curDatetime = raw_to_datetime(curArtPubDate, dateStringPrefix + dateStringMain)
         rss_print.print_debug(__file__, "uudise eelmine päev: " + str(lastArtPubDate), 3)
         rss_print.print_debug(__file__, "uudise praegune päev muutus: " + inpArtPubDate + " -> " + str(curArtPubDate), 2)
     else:
         rss_print.print_debug(__file__, "uudise päev: täna " + str(curArtPubDate) + " ja eile " + str(lastArtPubDate), 4)
 
-    return curArtPubDate
+    return curDatetime
 
 
 def raw_to_float(rawDateTimeText, rawDateTimeSyntax):
@@ -216,7 +240,7 @@ def raw_to_float(rawDateTimeText, rawDateTimeSyntax):
         datetimeStruct = time.strptime(curDateTimeText, rawDateTimeSyntax)
         datetimeList = list(datetimeStruct)
     except Exception as e:
-        rss_print.print_debug(__file__, "curDateTimeText = '" + curDateTimeText + "' dekodeerimine rawDateTimeSyntax = '" + rawDateTimeSyntax + "' EBAõnnestus, tagastame nulli", 0)
+        rss_print.print_debug(__file__, "len(" + str(len(curDateTimeText)) + ") curDateTimeText = '" + curDateTimeText + "',  rawDateTimeSyntax = '" + rawDateTimeSyntax + "' EBAõnnestus, tagastame nulli", 0)
         rss_print.print_debug(__file__, "exception = '" + str(e) + "'", 1)
         return 0
 

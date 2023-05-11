@@ -10,6 +10,7 @@ def save_string_stat(filename, saveToFile, inpString, found):
     if saveToFile is True:
         countFound = 0
         countNotFound = 0
+        inpString = inpString.replace("/./", "/")
 
         try:
             with open(filename, "r", encoding="utf-8") as file:
@@ -24,10 +25,11 @@ def save_string_stat(filename, saveToFile, inpString, found):
 
         if found:
             countFound += 1
-        elif not found:
+        else:
             countNotFound += 1
 
         inpStringWithStats = inpString + ";" + str(countFound) + ";" + str(countNotFound) + ";"
+        inpStringWithStats = inpStringWithStats.replace("/./", "/")
 
         replace_line_in_file(filename, inpString + ";", inpStringWithStats)
 

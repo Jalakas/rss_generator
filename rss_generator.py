@@ -5,6 +5,7 @@
 
 import os
 import sys
+from datetime import datetime
 
 import requests
 
@@ -65,10 +66,10 @@ for curRSS in RSS_TO_GENERATE:
 
         # lisame viimased andmed
         if curArticleDataDict["urls"]:
-            rss_print.print_debug(__file__, "lisame andmed viimaselt alamlehelt: " + curDomain, 2)
+            rss_print.print_debug(__file__, "lisame andmed alamlehelt: " + curDomain, 2)
             articleDataDict = parsers_common.dict_add_dict(articleDataDict, curArticleDataDict)
         else:
-            rss_print.print_debug(__file__, "ei leitud andmeid viimaselt alamlehelt: " + curDomain, 0)
+            rss_print.print_debug(__file__, "ei leitud andmeid alamlehelt: " + curDomain, 0)
 
     if not articleDataDict["urls"]:
         rss_print.print_debug(__file__, "ei leitud andmeid lehelt: " + curDomainBeginning, 0)
@@ -85,7 +86,7 @@ for curRSS in RSS_TO_GENERATE:
         continue
 
     if not articleDataDict["pubDates"]:
-        rss_print.print_debug(__file__, "kuupäevainfota leht: " + curDomain, 1)
+        rss_print.print_debug(__file__, "avaldamise kuupäevata leht: " + curDomain, 1)
 
     # combine rss file
     rss_print.print_debug(__file__, "asume koostame rss-i: " + curDomain, 3)
@@ -109,3 +110,6 @@ for curRSS in RSS_TO_GENERATE:
 if rss_config.SELENIUM_DRIVER:
     rss_print.print_debug(__file__, "sulgeme selenium akna(d)", 2)
     rss_config.SELENIUM_DRIVER.quit()
+
+now = datetime.now()
+print("Laadimise lõpp: ", now)

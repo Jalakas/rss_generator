@@ -15,6 +15,7 @@ def fill_article_dict(articleDataDict, pageTree, domain):
     )
     articleDataDict = parsers_common.article_data_dict_clean(__file__, articleDataDict, dictFilters, "in", "titles")
 
+    # muudame suuna sobivaks
     articleDataDict = parsers_common.dict_reverse_order(articleDataDict)
 
     return articleDataDict

@@ -8,11 +8,8 @@ def fill_article_dict(articleDataDict, pageTree, domain):
     articleDataDict["titles"] = parsers_common.xpath_to("list", pageTree, '//a[@class="uu-list-title"]/text()')
     articleDataDict["urls"] = parsers_common.xpath_to("list", pageTree, '//a[@class="uu-list-title"]/@href')
 
-    # remove unwanted content: titles
-    dictFilters = (
-        "Päeva sõel (med.):",
-    )
-    articleDataDict = parsers_common.article_data_dict_clean(__file__, articleDataDict, dictFilters, "in", "titles")
+    # muudame suuna sobivaks
+    articleDataDict = parsers_common.dict_reverse_order(articleDataDict)
 
     for i in parsers_common.article_urls_range(articleDataDict["urls"]):
         # titles
@@ -42,5 +39,7 @@ def fill_article_dict(articleDataDict, pageTree, domain):
             curArtPubDate = parsers_common.xpath_to("single", pageTree, '/html/head/meta[@property="article:published_time"]/@content')
             curArtPubDate = parsers_datetime.raw_to_datetime(curArtPubDate, "%Y-%m-%dt%H:%M:%S%z")
             articleDataDict["pubDates"] = parsers_common.list_add_or_assign(articleDataDict["pubDates"], i, curArtPubDate)
+
+
 
     return articleDataDict

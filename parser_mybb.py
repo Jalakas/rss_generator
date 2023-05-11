@@ -17,6 +17,12 @@ def fill_article_dict(articleDataDict, pageTree, domain):
     parentPages["titles"] = parsers_common.xpath_to("list", pageTree, '//span[@class=" subject_old"]/a/text()')
     parentPages["urls"] = parsers_common.xpath_to("list", pageTree, '//span[@class=" subject_old"]/a/@href')
 
+    # remove unwanted content: titles
+    dictFilters = (
+        "Muusika paranormaalsusest",
+    )
+    parentPages = parsers_common.article_data_dict_clean(__file__, parentPages, dictFilters, "in", "titles")
+
     # teemade läbivaatamine
     for i in parsers_common.article_urls_range(parentPages["urls"]):
         # teemalehe sisu hankimine
@@ -33,9 +39,7 @@ def fill_article_dict(articleDataDict, pageTree, domain):
             articlePostsDict = {}
             articlePostsDict["authors"] = parsers_common.xpath_to("list", pageTree, '//div[starts-with(@class,"author_information")]/strong/span[@class="largetext"]/a/text()')
             articlePostsDict["descriptions"] = parsers_common.xpath_to("list", pageTree, '//div[@class="post_body scaleimages"]', parent=True)
-            articlePostsDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//div[@class="post_head"]/span[@class="post_date"]/span[@class!="post_edit"]/@title')
-            if not articlePostsDict["pubDates"]:
-                articlePostsDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//div[@class="post_head"]/span[@class="post_date"]/text()')
+            articlePostsDict["pubDates"] = parsers_common.xpath_to("list", pageTree, '//div[@class="post_head"]/span[@class="post_date"]', parent=True)
             articlePostsDict["urls"] = parsers_common.xpath_to("list", pageTree, '//div[@class="post_head"]/div/strong/a/@href')
 
             # teema postituste läbivaatamine
@@ -52,6 +56,14 @@ def fill_article_dict(articleDataDict, pageTree, domain):
 
                 # pubDates
                 curArtPubDate = parsers_common.get(articlePostsDict["pubDates"], j)
+                curArtPubDate = curArtPubDate.lower()
+                curArtPubDate = curArtPubDate.split('<span class="post_edit"')[0]
+                curArtPubDate = curArtPubDate.split(" am")[0]
+                curArtPubDate = curArtPubDate.split(" pm")[0]
+                curArtPubDate = curArtPubDate.replace("</span>", "")
+                curArtPubDate = curArtPubDate.replace("\">eile", "")
+                curArtPubDate = curArtPubDate.replace("\">täna", "")
+                curArtPubDate = parsers_common.str_lchop(curArtPubDate, '<span title="')
                 if "tund" in curArtPubDate:
                     curArtPubDate = parsers_datetime.replace_string_with_timeformat(curArtPubDate, curArtPubDate, "%d-%m-%y, %H:%M", offsetHours=curArtPubDate.split(" ")[0])
                 elif "minut" in curArtPubDate:
@@ -67,6 +79,7 @@ def fill_article_dict(articleDataDict, pageTree, domain):
                 # url
                 curArtUrl = parsers_common.get(articlePostsDict["urls"], j)
                 curArtUrl = parsers_common.link_add_end(curArtUrl, articlePostsDict["urls"][j])
+                curArtUrl = parsers_common.str_domain_url(domain, curArtUrl)
                 articleDataDict["urls"] = parsers_common.list_add(articleDataDict["urls"], j, curArtUrl)
 
                 rss_print.print_debug(__file__, "teema " + str(i + 1) + " postitus nr. " + str(j + 1) + "/(" + str(len(articlePostsDict["urls"])) + ") on " + articlePostsDict["urls"][j], 2)

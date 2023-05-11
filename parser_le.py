@@ -27,14 +27,18 @@ def fill_article_dict(articleDataDict, pageTree, domain):
             articleDataDict["authors"] = parsers_common.list_add_or_assign(articleDataDict["authors"], i, curArtAuthor)
 
             # description
-            curArtDesc = parsers_common.xpath_to("single", pageTree, '//div[@class="td-post-content tagdiv-type"]', parent=True)
+            curArtDesc = parsers_common.xpath_to("single", pageTree, '//article/div[@class="td-post-content tagdiv-type"]', parent=True)
             # asendame jama
             curArtDesc = curArtDesc.replace('<h2 style="text-align: center">Artikli lugemiseks tellige digipakett või <strong><a href="https://online.le.ee/tellimine/">logige</a></strong> sisse!</h2>', "")
             curArtDesc = curArtDesc.replace('<h3 id="wc-comment-header">Kommenteeri</h3>', "")
             curArtDesc = curArtDesc.replace('<h5 id="reegel">NB! Kommentaarid on avaldatud lugejate poolt. Kommentaare ei toimetata. Nende sisu ei pruugi ühtida toimetuse seisukohtadega. Kui märkad sobimatut postitust, teavita sellest moderaatoreid, vajutades lipukese ikooni.</h5>', "")
             curArtDesc = curArtDesc.replace('<img class="aligncenter size-full wp-image-352428" src="https://online.le.ee/wp-content/uploads/2022/01/tasuline.png" alt="" width="688" height="101">', "")
             curArtDesc = curArtDesc.replace('<span>Teata ebasobivast kommentaarist</span>', "")
-
             articleDataDict["descriptions"] = parsers_common.list_add_or_assign(articleDataDict["descriptions"], i, curArtDesc)
+
+            # image
+            curArtImage = parsers_common.get(articleDataDict["images"], i)
+            curArtImage = parsers_common.split_failsafe(curArtImage, "url('", 1)
+            articleDataDict["images"] = parsers_common.list_add_or_assign(articleDataDict["images"], i, curArtImage)
 
     return articleDataDict

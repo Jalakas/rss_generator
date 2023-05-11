@@ -16,7 +16,6 @@ def fill_article_dict(articleDataDict, pageTree, domain):
         "kitarr",
         "meisterd",
         "poolvääriskivi",
-        "teemanditikand",
         "tuulesuunaja",
         "viiuli",
         "xtrons",
